@@ -6,4 +6,4 @@ User-agent: CCBot
 Disallow: /
 User-agent: *
 Disallow:
-Sitemap: https://dwnickerson.github.io/Publii-Cloudfare/sitemap.xml
+Sitemap: https://thesouthernbluegill.com/sitemap.xml
