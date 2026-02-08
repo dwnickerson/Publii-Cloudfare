@@ -107,6 +107,26 @@
             background: white;
         }
         
+        input.validating {
+            border-color: #f39c12;
+            background: #fffbf0;
+        }
+        
+        input.valid {
+            border-color: #27ae60;
+        }
+        
+        input.invalid {
+            border-color: #e74c3c;
+        }
+        
+        small {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        
         .slider-container {
             display: flex;
             align-items: center;
@@ -301,14 +321,34 @@
         }
         
         .error {
-            background: #fee;
-            border: 1px solid #e74c3c;
+            background: #fff5f5;
+            border: 2px solid #e74c3c;
             border-radius: 2px;
-            padding: 20px;
+            padding: 25px;
             margin: 40px auto;
             max-width: 600px;
             text-align: center;
             color: #c0392b;
+        }
+        
+        .error h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #e74c3c;
+        }
+        
+        .error p {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .error .hint {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f5c6cb;
+            font-size: 0.9rem;
+            color: #7f8c8d;
         }
         
         footer {
@@ -340,9 +380,12 @@
                     <input 
                         type="text" 
                         id="location" 
-                        placeholder="City, State (e.g., Tupelo, MS)"
+                        placeholder="City, State (e.g., Tupelo, MS) or ZIP code"
                         required
                     >
+                    <small style="color: #7f8c8d; font-size: 0.85rem; margin-top: 5px; display: block;">
+                        Examples: "Tupelo, MS" or "Memphis TN" or "38801"
+                    </small>
                 </div>
 
                 <div class="form-group">
@@ -358,7 +401,7 @@
                     <label for="waterType">Water Body Type</label>
                     <select id="waterType" required>
                         <option value="lake">Lake (10-500 acres)</option>
-                        <option value="pond">Pond/Small Lake (< 10 acres)</option>
+                        <option value="pond">Pond (< 10 acres)</option>
                         <option value="reservoir">Reservoir (> 500 acres)</option>
                     </select>
                 </div>
@@ -397,6 +440,42 @@
         const daysValue = document.getElementById('daysValue');
         daysSlider.addEventListener('input', (e) => {
             daysValue.textContent = e.target.value;
+        });
+
+        // Add location input validation
+        const locationInput = document.getElementById('location');
+        let validationTimeout;
+        
+        locationInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            
+            // Clear previous timeout
+            clearTimeout(validationTimeout);
+            
+            // Remove all validation classes
+            locationInput.classList.remove('valid', 'invalid', 'validating');
+            
+            if (value.length < 2) return;
+            
+            // Show validating state
+            locationInput.classList.add('validating');
+            
+            // Debounce validation
+            validationTimeout = setTimeout(() => {
+                const parsed = parseLocation(value);
+                
+                // Visual feedback based on parse result
+                if (parsed.type === 'zip' || parsed.type === 'city_state') {
+                    locationInput.classList.remove('validating', 'invalid');
+                    locationInput.classList.add('valid');
+                } else if (parsed.type === 'city_only') {
+                    locationInput.classList.remove('validating');
+                    // Neutral - might work
+                } else {
+                    locationInput.classList.remove('validating', 'valid');
+                    locationInput.classList.add('invalid');
+                }
+            }, 500);
         });
 
         // Species data - EXACT from species.yaml
@@ -464,23 +543,107 @@
             return kmh * 0.621371;
         }
 
-        async function getLocation(cityState) {
-            const [city, state] = cityState.split(',').map(s => s.trim());
-            const url = `https://nominatim.openstreetmap.org/search?q=${city},${state},US&format=json&limit=1`;
+        function parseLocation(input) {
+            // Trim whitespace
+            input = input.trim();
             
-            const response = await fetch(url, {
-                headers: { 'User-Agent': 'FishCast/1.0' }
-            });
-            
-            const data = await response.json();
-            if (data && data.length > 0) {
-                return {
-                    lat: parseFloat(data[0].lat),
-                    lon: parseFloat(data[0].lon),
-                    name: `${city}, ${state}`
-                };
+            // Check if it's a zip code (5 digits)
+            const zipPattern = /^\d{5}$/;
+            if (zipPattern.test(input)) {
+                return { type: 'zip', value: input };
             }
-            throw new Error('Location not found');
+            
+            // Check if it already has a comma
+            if (input.includes(',')) {
+                const parts = input.split(',').map(s => s.trim());
+                if (parts.length === 2) {
+                    return { type: 'city_state', city: parts[0], state: parts[1] };
+                }
+            }
+            
+            // Try to parse "City ST" format (last word is state)
+            const words = input.split(/\s+/);
+            if (words.length >= 2) {
+                const possibleState = words[words.length - 1].toUpperCase();
+                // Check if last word looks like a state (2 letters)
+                if (possibleState.length === 2) {
+                    const city = words.slice(0, -1).join(' ');
+                    return { type: 'city_state', city: city, state: possibleState };
+                }
+            }
+            
+            // If single word or unclear format, treat as city and guess
+            return { type: 'city_only', value: input };
+        }
+
+        async function getLocation(locationInput) {
+            const parsed = parseLocation(locationInput);
+            
+            // Handle ZIP code
+            if (parsed.type === 'zip') {
+                const url = `https://nominatim.openstreetmap.org/search?postalcode=${parsed.value}&country=US&format=json&limit=1`;
+                
+                const response = await fetch(url, {
+                    headers: { 'User-Agent': 'FishCast/1.0' }
+                });
+                
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    // Extract city and state from display_name
+                    const displayName = data[0].display_name;
+                    const parts = displayName.split(', ');
+                    let cityName = parts[0];
+                    let stateName = parts.length > 2 ? parts[parts.length - 2] : 'US';
+                    
+                    return {
+                        lat: parseFloat(data[0].lat),
+                        lon: parseFloat(data[0].lon),
+                        name: `${cityName}, ${stateName}`
+                    };
+                }
+                throw new Error(`ZIP code ${parsed.value} not found`);
+            }
+            
+            // Handle city, state format
+            if (parsed.type === 'city_state') {
+                const url = `https://nominatim.openstreetmap.org/search?q=${parsed.city},${parsed.state},US&format=json&limit=1`;
+                
+                const response = await fetch(url, {
+                    headers: { 'User-Agent': 'FishCast/1.0' }
+                });
+                
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    return {
+                        lat: parseFloat(data[0].lat),
+                        lon: parseFloat(data[0].lon),
+                        name: `${parsed.city}, ${parsed.state}`
+                    };
+                }
+                throw new Error(`Location "${parsed.city}, ${parsed.state}" not found. Please check spelling.`);
+            }
+            
+            // Handle city only - try to find in US
+            if (parsed.type === 'city_only') {
+                const url = `https://nominatim.openstreetmap.org/search?q=${parsed.value},US&format=json&limit=1`;
+                
+                const response = await fetch(url, {
+                    headers: { 'User-Agent': 'FishCast/1.0' }
+                });
+                
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    const displayName = data[0].display_name;
+                    return {
+                        lat: parseFloat(data[0].lat),
+                        lon: parseFloat(data[0].lon),
+                        name: displayName
+                    };
+                }
+                throw new Error(`Location "${parsed.value}" not found. Try: "City, State" or ZIP code.`);
+            }
+            
+            throw new Error('Invalid location format. Use "City, State" or ZIP code.');
         }
 
         async function getWeather(lat, lon, days) {
@@ -782,10 +945,20 @@
                 
             } catch (error) {
                 console.error('Error:', error);
+                
+                let errorMessage = error.message || 'Could not generate forecast. Please try again.';
+                let hint = '';
+                
+                // Provide helpful hints based on error type
+                if (error.message && error.message.includes('not found')) {
+                    hint = '<div class="hint"><strong>Tips:</strong><br>• Use format: "City, State" (e.g., "Tupelo, MS")<br>• Or just: "City ST" (e.g., "Memphis TN")<br>• Or ZIP code (e.g., "38801")<br>• Check spelling of city name</div>';
+                }
+                
                 resultsDiv.innerHTML = `
                     <div class="error">
-                        <h3>Error</h3>
-                        <p>${error.message || 'Could not generate forecast. Please try again.'}</p>
+                        <h3>⚠ Error</h3>
+                        <p>${errorMessage}</p>
+                        ${hint}
                     </div>
                 `;
             }
