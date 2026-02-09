@@ -2,7 +2,7 @@
   "name": "FishCast - Smart Fishing Forecasts",
   "short_name": "FishCast",
   "description": "AI-powered fishing forecast with species-specific predictions, water temperature modeling, and solunar calculations",
-  "start_url": "/",
+  "start_url": "/fishing-forecast/",
   "display": "standalone",
   "background_color": "#f5f5f5",
   "theme_color": "#2c3e50",
