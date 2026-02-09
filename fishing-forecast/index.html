@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,14 +21,34 @@
             box-sizing: border-box;
         }
         
-        body {
-            font-family: 'Lato', sans-serif;
-            background: #f5f5f5;
-            color: #2c3e50;
-            line-height: 1.6;
+        :root {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #e0e0e0;
+            --input-bg: #f8f9fa;
+            --shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
-        /* Subtle fish pattern background */
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2c2c2c;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #444;
+            --input-bg: #3a3a3a;
+            --shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        body {
+            font-family: 'Lato', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: background 0.3s, color 0.3s;
+        }
+        
         body::before {
             content: '';
             position: fixed;
@@ -44,12 +64,43 @@
             z-index: 0;
         }
         
+        [data-theme="dark"] body::before {
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(52, 152, 219, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(52, 152, 219, 0.1) 0%, transparent 50%);
+        }
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             position: relative;
             z-index: 1;
+        }
+        
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        
+        .theme-toggle button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg-secondary);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+        }
+        
+        .theme-toggle button:hover {
+            transform: scale(1.1);
         }
         
         header {
@@ -61,7 +112,7 @@
             font-family: 'Cinzel', serif;
             font-size: 3rem;
             font-weight: 700;
-            color: #2c3e50;
+            color: var(--text-primary);
             letter-spacing: 2px;
             margin-bottom: 5px;
         }
@@ -70,17 +121,71 @@
             font-size: 0.9rem;
             letter-spacing: 4px;
             text-transform: uppercase;
-            color: #7f8c8d;
+            color: var(--text-secondary);
             font-weight: 300;
         }
         
+        /* Favorites Section */
+        .favorites-section {
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: var(--shadow);
+        }
+        
+        .favorites-section h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+        
+        .favorites-list {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .favorite-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--input-bg);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .favorite-item:hover {
+            background: var(--border-color);
+        }
+        
+        .favorite-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .favorite-location {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .favorite-remove {
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        
+        /* Form Styles */
         .form-card {
-            background: white;
+            background: var(--bg-secondary);
             border-radius: 2px;
             padding: 40px;
             margin: 40px auto;
             max-width: 600px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: var(--shadow);
         }
         
         .form-group {
@@ -94,7 +199,37 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 8px;
-            color: #2c3e50;
+            color: var(--text-primary);
+        }
+        
+        .location-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .location-input-group input {
+            flex: 1;
+        }
+        
+        .geolocate-btn {
+            width: 50px;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: background 0.2s;
+        }
+        
+        .geolocate-btn:hover {
+            background: #2980b9;
+        }
+        
+        .geolocate-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
         }
         
         input, select {
@@ -102,8 +237,9 @@
             padding: 12px 16px;
             font-size: 1rem;
             font-family: 'Lato', sans-serif;
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
             border-radius: 2px;
             transition: all 0.2s;
         }
@@ -111,12 +247,20 @@
         input:focus, select:focus {
             outline: none;
             border-color: #3498db;
-            background: white;
+        }
+        
+        [data-theme="dark"] input:focus,
+        [data-theme="dark"] select:focus {
+            background: #404040;
         }
         
         input.validating {
             border-color: #f39c12;
             background: #fffbf0;
+        }
+        
+        [data-theme="dark"] input.validating {
+            background: #3a2f1f;
         }
         
         input.valid {
@@ -131,7 +275,7 @@
             display: block;
             margin-top: 5px;
             font-size: 0.85rem;
-            color: #7f8c8d;
+            color: var(--text-secondary);
         }
         
         .slider-container {
@@ -153,7 +297,7 @@
             -webkit-appearance: none;
             appearance: none;
             height: 2px;
-            background: #e0e0e0;
+            background: var(--border-color);
             border: none;
         }
         
@@ -220,13 +364,14 @@
             to { transform: rotate(360deg); }
         }
         
+        /* Score Display */
         .score-header {
-            background: white;
+            background: var(--bg-secondary);
             border-radius: 2px;
             padding: 50px 30px;
             margin: 40px auto;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: var(--shadow);
         }
         
         .score-header h2 {
@@ -234,7 +379,7 @@
             font-size: 1.5rem;
             font-weight: 600;
             margin-bottom: 30px;
-            color: #2c3e50;
+            color: var(--text-primary);
             letter-spacing: 1px;
         }
         
@@ -256,10 +401,11 @@
         
         .location-info {
             font-size: 1rem;
-            color: #7f8c8d;
+            color: var(--text-secondary);
             margin-top: 20px;
         }
         
+        /* Detail Cards */
         .details-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -268,10 +414,10 @@
         }
         
         .detail-card {
-            background: white;
+            background: var(--bg-secondary);
             border-radius: 2px;
             padding: 25px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: var(--shadow);
         }
         
         .detail-card h3 {
@@ -279,8 +425,8 @@
             font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 20px;
-            color: #2c3e50;
-            border-bottom: 2px solid #f0f0f0;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
             padding-bottom: 10px;
         }
         
@@ -289,7 +435,7 @@
             justify-content: space-between;
             padding: 10px 0;
             font-size: 0.9rem;
-            border-bottom: 1px solid #f8f8f8;
+            border-bottom: 1px solid var(--input-bg);
         }
         
         .detail-row:last-child {
@@ -297,16 +443,98 @@
         }
         
         .detail-label {
-            color: #7f8c8d;
+            color: var(--text-secondary);
             font-weight: 400;
         }
         
         .detail-value {
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--text-primary);
             text-align: right;
         }
         
+        /* Technique Tips */
+        .tips-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 2px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: var(--shadow);
+        }
+        
+        .tips-card h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tip-item {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 2px;
+            margin: 10px 0;
+            border-left: 3px solid rgba(255,255,255,0.5);
+        }
+        
+        /* Calendar View */
+        .calendar-view {
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            padding: 25px;
+            margin: 40px 0;
+            box-shadow: var(--shadow);
+        }
+        
+        .calendar-view h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        
+        .calendar-day {
+            text-align: center;
+            padding: 20px 10px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .calendar-day:hover {
+            transform: translateY(-2px);
+        }
+        
+        .calendar-day-name {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .calendar-day-score {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'Cinzel', serif;
+        }
+        
+        .calendar-day-rating {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+        
+        /* Forecast Grid */
         .forecast-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -315,15 +543,15 @@
         }
         
         .day-card {
-            background: white;
+            background: var(--bg-secondary);
             border-radius: 2px;
             padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: var(--shadow);
             transition: all 0.2s;
         }
         
         .day-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
         
         .day-header {
@@ -331,7 +559,7 @@
             font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 20px;
-            color: #2c3e50;
+            color: var(--text-primary);
             text-align: center;
         }
         
@@ -357,7 +585,7 @@
             justify-content: space-between;
             padding: 10px 0;
             font-size: 0.9rem;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--input-bg);
         }
         
         .weather-detail:last-child {
@@ -365,50 +593,247 @@
         }
         
         .weather-label {
-            color: #7f8c8d;
+            color: var(--text-secondary);
             font-weight: 400;
         }
         
         .weather-value {
             font-weight: 700;
-            color: #2c3e50;
+            color: var(--text-primary);
+        }
+        
+        /* Radar Section */
+        .radar-section {
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            padding: 25px;
+            margin: 40px 0;
+            box-shadow: var(--shadow);
+        }
+        
+        .radar-section h3 {
+            font-family: 'Cinzel', serif;
+            margin-bottom: 15px;
+        }
+        
+        .radar-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .radar-controls button {
+            padding: 8px 16px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            width: auto;
+            text-transform: none;
+            letter-spacing: normal;
+            font-size: 0.9rem;
+        }
+        
+        .radar-controls button.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .radar-controls button:hover {
+            background: #3498db;
+            color: white;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .action-btn {
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+            font-family: 'Lato', sans-serif;
+            font-weight: 600;
+            width: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        .action-btn.primary {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        
+        .action-btn.success {
+            background: #27ae60;
+            color: white;
+            border-color: #27ae60;
+        }
+        
+        .action-btn.warning {
+            background: #f39c12;
+            color: white;
+            border-color: #f39c12;
+        }
+        
+        /* Catch Log */
+        .catch-log-section {
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            padding: 25px;
+            margin: 40px 0;
+            box-shadow: var(--shadow);
+        }
+        
+        .catch-log-section h3 {
+            font-family: 'Cinzel', serif;
+            margin-bottom: 20px;
+        }
+        
+        .catch-form {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .catch-form input,
+        .catch-form select {
+            width: 100%;
+        }
+        
+        .catch-list {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .catch-item {
+            background: var(--input-bg);
+            padding: 15px;
+            border-radius: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .catch-info {
+            flex: 1;
+        }
+        
+        .catch-species {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .catch-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .catch-delete {
+            color: #e74c3c;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            font-family: 'Cinzel', serif;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+        }
+        
+        .modal-close {
+            float: right;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        /* Notification Badge */
+        .notification-badge {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 2px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 999;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
         
         .error {
-            background: #fff5f5;
-            border: 2px solid #e74c3c;
+            background: #fee;
+            border: 1px solid #e74c3c;
             border-radius: 2px;
-            padding: 25px;
+            padding: 20px;
             margin: 40px auto;
             max-width: 600px;
             text-align: center;
             color: #c0392b;
         }
         
-        .error h3 {
-            font-family: 'Cinzel', serif;
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            color: #e74c3c;
-        }
-        
-        .error p {
-            margin: 10px 0;
-            line-height: 1.6;
-        }
-        
-        .error .hint {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #f5c6cb;
-            font-size: 0.9rem;
-            color: #7f8c8d;
-        }
-        
         footer {
             text-align: center;
             padding: 40px 20px;
-            color: #95a5a6;
+            color: var(--text-secondary);
             font-size: 0.85rem;
         }
         
@@ -418,28 +843,73 @@
         .fair { color: #f39c12; }
         .poor { color: #e67e22; }
         .bad { color: #e74c3c; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo-text {
+                font-size: 2rem;
+            }
+            
+            .score-display {
+                font-size: 4rem;
+            }
+            
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .forecast-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .calendar-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+        <button id="themeToggle" title="Toggle dark mode">🌙</button>
+    </div>
+
     <div class="container">
         <header>
             <div class="logo-text">FishCast</div>
             <div class="subtitle">Fishing Forecast</div>
         </header>
 
+        <!-- Favorites Section -->
+        <div class="favorites-section" id="favoritesSection" style="display: none;">
+            <h3>⭐ Favorite Spots</h3>
+            <div id="favoritesList" class="favorites-list"></div>
+        </div>
+
         <div class="form-card">
             <form id="forecastForm">
                 <div class="form-group">
                     <label for="location">Location</label>
-                    <input 
-                        type="text" 
-                        id="location" 
-                        placeholder="City, State (e.g., Tupelo, MS) or ZIP code"
-                        required
-                    >
-                    <small style="color: #7f8c8d; font-size: 0.85rem; margin-top: 5px; display: block;">
-                        Examples: "Tupelo, MS" or "Memphis TN" or "38801"
-                    </small>
+                    <div class="location-input-group">
+                        <input 
+                            type="text" 
+                            id="location" 
+                            placeholder="City, State or ZIP code"
+                            required
+                        >
+                        <button type="button" id="geolocateBtn" class="geolocate-btn" title="Use my location">
+                            📍
+                        </button>
+                    </div>
+                    <small>Examples: "Tupelo, MS" or "Memphis TN" or "38801"</small>
                 </div>
 
                 <div class="form-group">
@@ -485,54 +955,38 @@
 
         <footer>
             <p>FishCast | Weather data from Open-Meteo</p>
+            <p style="margin-top: 10px;">
+                <a href="#" id="aboutLink" style="color: var(--text-secondary); text-decoration: none;">About</a> | 
+                <a href="#" id="settingsLink" style="color: var(--text-secondary); text-decoration: none;">Settings</a>
+            </p>
         </footer>
     </div>
 
+    <!-- Modals -->
+    <div id="catchLogModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-close" onclick="closeCatchLog()">×</span>
+                📊 Log Your Catch
+            </div>
+            <div class="catch-form">
+                <input type="number" id="catchCount" placeholder="Number of fish" min="0">
+                <input type="number" id="catchSize" placeholder="Average size (inches)" min="0" step="0.1">
+                <textarea id="catchNotes" placeholder="Notes (lure, location, etc.)" style="padding: 12px; font-family: 'Lato', sans-serif; border: 1px solid var(--border-color); border-radius: 2px; background: var(--input-bg); color: var(--text-primary); resize: vertical; min-height: 80px;"></textarea>
+                <button onclick="saveCatch()" class="action-btn primary" style="width: 100%;">Save Catch</button>
+            </div>
+            <div id="catchHistory" style="margin-top: 30px;">
+                <h4 style="margin-bottom: 15px;">Recent Catches</h4>
+                <div id="catchList" class="catch-list"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Update slider
-        const daysSlider = document.getElementById('days');
-        const daysValue = document.getElementById('daysValue');
-        daysSlider.addEventListener('input', (e) => {
-            daysValue.textContent = e.target.value;
-        });
-
-        // Add location input validation
-        const locationInput = document.getElementById('location');
-        let validationTimeout;
+        // ============================================
+        // CORE DATA & UTILITIES
+        // ============================================
         
-        locationInput.addEventListener('input', (e) => {
-            const value = e.target.value.trim();
-            
-            // Clear previous timeout
-            clearTimeout(validationTimeout);
-            
-            // Remove all validation classes
-            locationInput.classList.remove('valid', 'invalid', 'validating');
-            
-            if (value.length < 2) return;
-            
-            // Show validating state
-            locationInput.classList.add('validating');
-            
-            // Debounce validation
-            validationTimeout = setTimeout(() => {
-                const parsed = parseLocation(value);
-                
-                // Visual feedback based on parse result
-                if (parsed.type === 'zip' || parsed.type === 'city_state') {
-                    locationInput.classList.remove('validating', 'invalid');
-                    locationInput.classList.add('valid');
-                } else if (parsed.type === 'city_only') {
-                    locationInput.classList.remove('validating');
-                    // Neutral - might work
-                } else {
-                    locationInput.classList.remove('validating', 'valid');
-                    locationInput.classList.add('invalid');
-                }
-            }, 500);
-        });
-
-        // Species data - EXACT from species.yaml
         const SPECIES_DATA = {
             bass: {
                 name: "Largemouth Bass",
@@ -611,27 +1065,37 @@
             return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
         }
 
+        function formatDate(dateStr) {
+            const date = new Date(dateStr + 'T12:00:00');
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+        }
+
+        function formatDateShort(dateStr) {
+            const date = new Date(dateStr + 'T12:00:00');
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${days[date.getDay()]} ${months[date.getMonth()]} ${date.getDate()}`;
+        }
+
         function calculateSolunar(lat, lon, date) {
             const year = date.getFullYear();
             const month = date.getMonth() + 1;
             const day = date.getDate();
             
-            // Julian date calculation
             const a = Math.floor((14 - month) / 12);
             const y = year - a;
             const m = month + 12 * a - 3;
             const jd = day + Math.floor((153 * m + 2) / 5) + 365 * y + 
                       Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
             
-            // Days since new moon (Jan 6, 2000)
             const daysSinceNew = jd - 2451550.1;
             const newMoons = daysSinceNew / 29.530588853;
             const phase = newMoons - Math.floor(newMoons);
             
-            // Moon illumination
             const illumination = (1 - Math.cos(phase * 2 * Math.PI)) / 2 * 100;
             
-            // Phase name
             let phaseName;
             if (phase < 0.0625 || phase >= 0.9375) phaseName = "New Moon";
             else if (phase < 0.1875) phaseName = "Waxing Crescent";
@@ -642,7 +1106,6 @@
             else if (phase < 0.8125) phaseName = "Last Quarter";
             else phaseName = "Waning Crescent";
             
-            // Solunar periods
             const baseHour = 12 + Math.floor(phase * 24);
             
             const formatPeriod = (start, end) => {
@@ -665,17 +1128,18 @@
             };
         }
 
+        // ============================================
+        // LOCATION PARSING & GEOCODING
+        // ============================================
+        
         function parseLocation(input) {
-            // Trim whitespace
             input = input.trim();
             
-            // Check if it's a zip code (5 digits)
             const zipPattern = /^\d{5}$/;
             if (zipPattern.test(input)) {
                 return { type: 'zip', value: input };
             }
             
-            // Check if it already has a comma
             if (input.includes(',')) {
                 const parts = input.split(',').map(s => s.trim());
                 if (parts.length === 2) {
@@ -683,25 +1147,21 @@
                 }
             }
             
-            // Try to parse "City ST" format (last word is state)
             const words = input.split(/\s+/);
             if (words.length >= 2) {
                 const possibleState = words[words.length - 1].toUpperCase();
-                // Check if last word looks like a state (2 letters)
                 if (possibleState.length === 2) {
                     const city = words.slice(0, -1).join(' ');
                     return { type: 'city_state', city: city, state: possibleState };
                 }
             }
             
-            // If single word or unclear format, treat as city and guess
             return { type: 'city_only', value: input };
         }
 
         async function getLocation(locationInput) {
             const parsed = parseLocation(locationInput);
             
-            // Handle ZIP code
             if (parsed.type === 'zip') {
                 const url = `https://nominatim.openstreetmap.org/search?postalcode=${parsed.value}&country=US&format=json&limit=1`;
                 
@@ -711,7 +1171,6 @@
                 
                 const data = await response.json();
                 if (data && data.length > 0) {
-                    // Extract city and state from display_name
                     const displayName = data[0].display_name;
                     const parts = displayName.split(', ');
                     let cityName = parts[0];
@@ -726,7 +1185,6 @@
                 throw new Error(`ZIP code ${parsed.value} not found`);
             }
             
-            // Handle city, state format
             if (parsed.type === 'city_state') {
                 const url = `https://nominatim.openstreetmap.org/search?q=${parsed.city},${parsed.state},US&format=json&limit=1`;
                 
@@ -745,7 +1203,6 @@
                 throw new Error(`Location "${parsed.city}, ${parsed.state}" not found. Please check spelling.`);
             }
             
-            // Handle city only - try to find in US
             if (parsed.type === 'city_only') {
                 const url = `https://nominatim.openstreetmap.org/search?q=${parsed.value},US&format=json&limit=1`;
                 
@@ -769,7 +1226,6 @@
         }
 
         async function getWeather(lat, lon, days) {
-            // Historical data
             const endDate = new Date().toISOString().split('T')[0];
             const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
             
@@ -778,7 +1234,6 @@
             const historicalResponse = await fetch(historicalUrl);
             const historicalData = await historicalResponse.json();
             
-            // Forecast data
             const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,weather_code&hourly=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,weather_code,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=auto&forecast_days=${days}`;
             
             const forecastResponse = await fetch(forecastUrl);
@@ -787,6 +1242,10 @@
             return { historical: historicalData, forecast: forecastData };
         }
 
+        // ============================================
+        // WATER TEMPERATURE & FISH BIOLOGY
+        // ============================================
+        
         function estimateWaterTemp(airTemps, waterType) {
             if (!airTemps || airTemps.length === 0) return 50;
             
@@ -835,13 +1294,11 @@
             return 'stable';
         }
 
-        // EXACT calculation from biology.py
         function calculateFishingScore(weather, waterTemp, speciesData, speciesKey) {
             let score = 50;
             const factors = [];
             const prefs = speciesData.preferences;
             
-            // 1. PRESSURE TREND
             const pressures = weather.hourly.surface_pressure.slice(0, 6);
             const pTrend = getPressureTrend(pressures);
             
@@ -858,7 +1315,6 @@
                 factors.push({ name: 'Rising pressure', value: -5 });
             }
             
-            // 2. FISH PHASE
             const phase = getFishPhase(waterTemp, speciesData);
             let phaseBonus = phase.data.score_bonus;
             
@@ -870,21 +1326,17 @@
             score += phaseBonus;
             factors.push({ name: phase.name.replace('_', ' ') + ' phase', value: phaseBonus });
             
-            // 3. WIND
             const windSpeed = kmhToMph(weather.current.wind_speed_10m);
             
             if (speciesKey === 'bass') {
-                // Bass love wind! Research shows catch rates double with wind >15mph
-                // Ideal: 5-15 mph (creates ripple, oxygenates water, masks lures)
                 const windIdeal = prefs.wind_ideal || [5, 15];
-                
                 if (windSpeed >= windIdeal[0] && windSpeed <= windIdeal[1]) {
                     score += 15;
                 } else if (windSpeed > 20) {
                     score -= 10;
                 } else if (windSpeed > 15) {
                     score += 5;
-                } else {  // < 5 mph (calm)
+                } else {
                     score += 5;
                 }
             } else if (speciesKey === 'crappie') {
@@ -903,7 +1355,6 @@
                 }
             }
             
-            // 4. CLOUDS
             const clouds = weather.current.cloud_cover;
             
             if (clouds >= 30 && clouds <= 70) {
@@ -918,7 +1369,6 @@
                 }
             }
             
-            // 5. WEATHER CODE
             const code = weather.current.weather_code;
             
             if (code === 51 || code === 53 || code === 61) {
@@ -941,7 +1391,6 @@
                 score += penalty;
             }
             
-            // 6. PRECIP PROB
             const precipProb = weather.hourly.precipitation_probability[0] || 0;
             if (precipProb > 70 && code !== 51 && code !== 53 && code !== 61) {
                 score -= 10;
@@ -959,13 +1408,325 @@
             return { score, rating, colorClass, factors, phase: phase.name };
         }
 
-        function formatDate(dateStr) {
-            const date = new Date(dateStr + 'T12:00:00');
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+        // ============================================
+        // FISHING TECHNIQUE TIPS
+        // ============================================
+        
+        function getTechniqueTips(score, waterTemp, windSpeed, weather, speciesKey) {
+            const tips = [];
+            
+            if (waterTemp < 50) {
+                tips.push("🐢 Fish are sluggish in cold water - use slow presentations and smaller baits");
+                tips.push("📍 Target deeper water (15-25 ft) where fish are holding");
+            } else if (waterTemp >= 58 && waterTemp <= 70) {
+                tips.push("🎯 Pre-spawn/spawn period - fish are aggressive and shallow");
+                tips.push("🏖️ Target shallow flats and spawning areas");
+            }
+            
+            if (windSpeed < 5) {
+                tips.push("🤫 Calm conditions - use stealthy approaches and natural colors");
+            } else if (windSpeed >= 10) {
+                tips.push("🌊 Wind creates current - fish the windward banks where food accumulates");
+                tips.push("⬆️ Cast INTO the wind for better stealth");
+            }
+            
+            const pTrend = getPressureTrend(weather.hourly.surface_pressure.slice(0, 6));
+            if (pTrend === 'falling' || pTrend === 'rapid_fall') {
+                tips.push("📉 Falling pressure - fish are feeding aggressively before weather change!");
+            }
+            
+            const code = weather.current.weather_code;
+            if (code === 51 || code === 53 || code === 61) {
+                if (speciesKey === 'bass') {
+                    tips.push("🌧️ Light rain - topwater lures can be very effective!");
+                }
+            }
+            
+            if (score >= 80) {
+                tips.push("🔥 Excellent conditions - prime time for fishing!");
+            } else if (score < 40) {
+                tips.push("⏳ Tough conditions - focus on solunar major periods for best results");
+            }
+            
+            return tips;
         }
 
+        // ============================================
+        // UI COMPONENTS
+        // ============================================
+        
+        let currentLat, currentLon, currentForecastData;
+
+        function showRadar(lat, lon) {
+            currentLat = lat;
+            currentLon = lon;
+            setRadarLayer('radar');
+            document.getElementById('radarSection').style.display = 'block';
+        }
+
+        function setRadarLayer(layer) {
+            const frame = document.getElementById('radarFrame');
+            const zoom = 8;
+            
+            const layerMap = {
+                'radar': 'radar',
+                'wind': 'wind',
+                'temp': 'temp',
+                'clouds': 'clouds'
+            };
+            
+            document.querySelectorAll('.radar-controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            const url = `https://embed.windy.com/embed2.html?lat=${currentLat}&lon=${currentLon}&detailLat=${currentLat}&detailLon=${currentLon}&width=650&height=450&zoom=${zoom}&level=surface&overlay=${layerMap[layer]}&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1`;
+            
+            frame.src = url;
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification-badge';
+            notification.textContent = message;
+            if (type === 'error') {
+                notification.style.background = '#e74c3c';
+            }
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // ============================================
+        // FAVORITES MANAGER
+        // ============================================
+        
+        class FavoritesManager {
+            constructor() {
+                this.favorites = JSON.parse(localStorage.getItem('fishcast_favorites') || '[]');
+                this.render();
+            }
+            
+            add(name, location) {
+                const favorite = {
+                    id: Date.now(),
+                    name: name,
+                    location: location,
+                    addedAt: new Date().toISOString()
+                };
+                
+                this.favorites.push(favorite);
+                this.save();
+                this.render();
+            }
+            
+            remove(id) {
+                this.favorites = this.favorites.filter(f => f.id !== id);
+                this.save();
+                this.render();
+            }
+            
+            save() {
+                localStorage.setItem('fishcast_favorites', JSON.stringify(this.favorites));
+            }
+            
+            render() {
+                const section = document.getElementById('favoritesSection');
+                const list = document.getElementById('favoritesList');
+                
+                if (this.favorites.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+                
+                section.style.display = 'block';
+                list.innerHTML = this.favorites.map(fav => `
+                    <div class="favorite-item" onclick="favoritesManager.select('${fav.location}')">
+                        <div>
+                            <div class="favorite-name">${fav.name}</div>
+                            <div class="favorite-location">${fav.location}</div>
+                        </div>
+                        <span class="favorite-remove" onclick="event.stopPropagation(); favoritesManager.remove(${fav.id})">✕</span>
+                    </div>
+                `).join('');
+            }
+            
+            select(location) {
+                document.getElementById('location').value = location;
+            }
+        }
+
+        const favoritesManager = new FavoritesManager();
+
+        // ============================================
+        // CATCH LOG MANAGER
+        // ============================================
+        
+        class CatchLogManager {
+            constructor() {
+                this.catches = JSON.parse(localStorage.getItem('fishcast_catches') || '[]');
+            }
+            
+            add(catchData) {
+                const catch_entry = {
+                    id: Date.now(),
+                    ...catchData,
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.catches.unshift(catch_entry);
+                this.save();
+                return catch_entry;
+            }
+            
+            remove(id) {
+                this.catches = this.catches.filter(c => c.id !== id);
+                this.save();
+            }
+            
+            save() {
+                localStorage.setItem('fishcast_catches', JSON.stringify(this.catches));
+            }
+            
+            getRecent(limit = 10) {
+                return this.catches.slice(0, limit);
+            }
+            
+            getStats() {
+                if (this.catches.length === 0) return null;
+                
+                const totalCatches = this.catches.reduce((sum, c) => sum + (c.count || 0), 0);
+                const avgSize = this.catches
+                    .filter(c => c.size > 0)
+                    .reduce((sum, c) => sum + c.size, 0) / this.catches.filter(c => c.size > 0).length;
+                
+                return {
+                    totalTrips: this.catches.length,
+                    totalCatches: totalCatches,
+                    avgSize: avgSize.toFixed(1)
+                };
+            }
+        }
+
+        const catchLogManager = new CatchLogManager();
+
+        function openCatchLog() {
+            document.getElementById('catchLogModal').classList.add('show');
+            renderCatchHistory();
+        }
+
+        function closeCatchLog() {
+            document.getElementById('catchLogModal').classList.remove('show');
+        }
+
+        function saveCatch() {
+            const count = parseInt(document.getElementById('catchCount').value) || 0;
+            const size = parseFloat(document.getElementById('catchSize').value) || 0;
+            const notes = document.getElementById('catchNotes').value;
+            
+            if (count === 0 && size === 0) {
+                alert('Please enter number of fish or size');
+                return;
+            }
+            
+            const location = document.getElementById('location').value;
+            const species = document.getElementById('species').value;
+            const scoreElement = document.querySelector('.score-display');
+            const predictedScore = scoreElement ? parseInt(scoreElement.textContent) : null;
+            
+            catchLogManager.add({
+                location: location,
+                species: species,
+                count: count,
+                size: size,
+                notes: notes,
+                predictedScore: predictedScore
+            });
+            
+            document.getElementById('catchCount').value = '';
+            document.getElementById('catchSize').value = '';
+            document.getElementById('catchNotes').value = '';
+            
+            renderCatchHistory();
+            showNotification('Catch logged successfully!');
+        }
+
+        function renderCatchHistory() {
+            const list = document.getElementById('catchList');
+            const recent = catchLogManager.getRecent(5);
+            
+            if (recent.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No catches logged yet</p>';
+                return;
+            }
+            
+            list.innerHTML = recent.map(c => {
+                const date = new Date(c.timestamp);
+                const speciesName = SPECIES_DATA[c.species]?.name || c.species;
+                return `
+                    <div class="catch-item">
+                        <div class="catch-info">
+                            <div class="catch-species">${speciesName} at ${c.location}</div>
+                            <div class="catch-details">
+                                ${c.count} fish${c.size ? ` | ${c.size}" avg` : ''} | 
+                                ${date.toLocaleDateString()}
+                                ${c.notes ? ` | ${c.notes}` : ''}
+                            </div>
+                        </div>
+                        <span class="catch-delete" onclick="catchLogManager.remove(${c.id}); renderCatchHistory();">✕</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================
+        // OFFLINE STORAGE
+        // ============================================
+        
+        class OfflineManager {
+            constructor() {
+                this.dbName = 'FishCastDB';
+                this.storeName = 'forecasts';
+            }
+            
+            async saveForecast(forecastKey, data) {
+                try {
+                    localStorage.setItem(`forecast_${forecastKey}`, JSON.stringify({
+                        data: data,
+                        savedAt: new Date().toISOString()
+                    }));
+                } catch (e) {
+                    console.error('Failed to save forecast offline:', e);
+                }
+            }
+            
+            async loadForecast(forecastKey) {
+                try {
+                    const stored = localStorage.getItem(`forecast_${forecastKey}`);
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        const savedAt = new Date(parsed.savedAt);
+                        const hoursSince = (Date.now() - savedAt.getTime()) / (1000 * 60 * 60);
+                        
+                        if (hoursSince < 24) {
+                            return parsed.data;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to load offline forecast:', e);
+                }
+                return null;
+            }
+        }
+
+        const offlineManager = new OfflineManager();
+
+        // ============================================
+        // MAIN FORECAST GENERATION
+        // ============================================
+        
         async function generateForecast(location, speciesKey, waterType, days) {
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Analyzing conditions...</p></div>';
@@ -974,15 +1735,27 @@
                 const coords = await getLocation(location);
                 const { historical, forecast } = await getWeather(coords.lat, coords.lon, days);
                 
+                currentForecastData = { coords, forecast, historical, location, speciesKey, waterType, days };
+                
+                const forecastKey = `${coords.lat}_${coords.lon}_${speciesKey}_${waterType}`;
+                await offlineManager.saveForecast(forecastKey, currentForecastData);
+                
                 const historicalTemps = historical.daily.temperature_2m_mean.map(t => cToF(t));
                 const currentWaterTemp = estimateWaterTemp(historicalTemps, waterType);
                 
                 const speciesData = SPECIES_DATA[speciesKey];
                 const currentScore = calculateFishingScore(forecast, currentWaterTemp, speciesData, speciesKey);
                 
-                // Calculate solunar times
                 const today = new Date();
                 const solunar = calculateSolunar(coords.lat, coords.lon, today);
+                
+                const tips = getTechniqueTips(
+                    currentScore.score,
+                    currentWaterTemp,
+                    kmhToMph(forecast.current.wind_speed_10m),
+                    forecast,
+                    speciesKey
+                );
                 
                 let html = `
                     <div class="score-header">
@@ -992,6 +1765,18 @@
                         <div class="location-info">
                             ${coords.name} | ${speciesData.name}
                         </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn primary" onclick="openCatchLog()">📊 Log Catch</button>
+                        <button class="action-btn" onclick="shareF()">📱 Share</button>
+                        <button class="action-btn" onclick="saveFavorite()">⭐ Save Location</button>
+                        <button class="action-btn" onclick="requestNotificationPermission()">🔔 Enable Alerts</button>
+                    </div>
+                    
+                    <div class="tips-card">
+                        <h3>🎣 Fishing Tips for Today</h3>
+                        ${tips.map(tip => `<div class="tip-item">${tip}</div>`).join('')}
                     </div>
                     
                     <div class="details-grid">
@@ -1064,14 +1849,36 @@
                         </div>
                     </div>
                     
+                    <div class="calendar-view">
+                        <h3>📅 Week at a Glance</h3>
+                        <div class="calendar-grid" id="calendarGrid"></div>
+                    </div>
+                    
+                    <div class="radar-section" id="radarSection" style="display: none;">
+                        <h3>🗺️ Weather Radar</h3>
+                        <div class="radar-controls">
+                            <button onclick="setRadarLayer('radar')" class="active">Radar</button>
+                            <button onclick="setRadarLayer('wind')">Wind</button>
+                            <button onclick="setRadarLayer('temp')">Temperature</button>
+                            <button onclick="setRadarLayer('clouds')">Clouds</button>
+                        </div>
+                        <iframe id="radarFrame" width="100%" height="450" frameborder="0" style="border-radius: 2px;"></iframe>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <button class="action-btn" onclick="showRadar(${coords.lat}, ${coords.lon})" style="width: auto;">
+                            🗺️ Show Weather Radar
+                        </button>
+                    </div>
+                    
                     <div class="forecast-grid">
                 `;
                 
-                // Daily forecasts - skip index 0 (today already shown)
+                const allDailyScores = [];
+                
                 for (let i = 1; i < forecast.daily.time.length; i++) {
                     const date = forecast.daily.time[i];
                     
-                    // Build future temps array
                     const futureAirTemps = [...historicalTemps];
                     for (let j = 1; j <= i; j++) {
                         const futureAvg = (cToF(forecast.daily.temperature_2m_max[j]) + cToF(forecast.daily.temperature_2m_min[j])) / 2;
@@ -1106,9 +1913,15 @@
                     const pressureTrend = getPressureTrend(dayWeather.hourly.surface_pressure);
                     const clouds = dayWeather.current.cloud_cover;
                     
-                    // Calculate solunar for this day
                     const futureDate = new Date(date + 'T12:00:00');
                     const daySolunar = calculateSolunar(coords.lat, coords.lon, futureDate);
+                    
+                    allDailyScores.push({
+                        date: date,
+                        score: dayScore.score,
+                        rating: dayScore.rating,
+                        colorClass: dayScore.colorClass
+                    });
                     
                     html += `
                         <div class="day-card">
@@ -1141,11 +1954,19 @@
                             </div>
                             <div class="weather-detail">
                                 <span class="weather-label">Moon</span>
-                                <span class="weather-value">${daySolunar.moon_phase}</span>
+                                <span class="weather-value">${daySolunar.moon_phase} (${daySolunar.illumination.toFixed(0)}%)</span>
                             </div>
                             <div class="weather-detail">
                                 <span class="weather-label">Sunrise / Sunset</span>
                                 <span class="weather-value">${formatTime(forecast.daily.sunrise[i])} / ${formatTime(forecast.daily.sunset[i])}</span>
+                            </div>
+                            <div class="weather-detail">
+                                <span class="weather-label">Major Periods</span>
+                                <span class="weather-value">${daySolunar.major_periods[0]}<br>${daySolunar.major_periods[1]}</span>
+                            </div>
+                            <div class="weather-detail">
+                                <span class="weather-label">Minor Periods</span>
+                                <span class="weather-value">${daySolunar.minor_periods[0]}<br>${daySolunar.minor_periods[1]}</span>
                             </div>
                             <div class="weather-detail">
                                 <span class="weather-label">Fish Phase</span>
@@ -1157,28 +1978,193 @@
                 
                 html += '</div>';
                 resultsDiv.innerHTML = html;
+                
+                const calendarGrid = document.getElementById('calendarGrid');
+                calendarGrid.innerHTML = [
+                    { date: forecast.daily.time[0], score: currentScore.score, rating: currentScore.rating, colorClass: currentScore.colorClass },
+                    ...allDailyScores
+                ].map(day => `
+                    <div class="calendar-day" style="background: var(--bg-secondary);">
+                        <div class="calendar-day-name">${formatDateShort(day.date)}</div>
+                        <div class="calendar-day-score ${day.colorClass}">${day.score}</div>
+                        <div class="calendar-day-rating ${day.colorClass}">${day.rating}</div>
+                    </div>
+                `).join('');
+                
                 resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                checkNotificationConditions(currentScore.score, allDailyScores);
                 
             } catch (error) {
                 console.error('Error:', error);
-                
-                let errorMessage = error.message || 'Could not generate forecast. Please try again.';
-                let hint = '';
-                
-                // Provide helpful hints based on error type
-                if (error.message && error.message.includes('not found')) {
-                    hint = '<div class="hint"><strong>Tips:</strong><br>• Use format: "City, State" (e.g., "Tupelo, MS")<br>• Or just: "City ST" (e.g., "Memphis TN")<br>• Or ZIP code (e.g., "38801")<br>• Check spelling of city name</div>';
-                }
-                
                 resultsDiv.innerHTML = `
                     <div class="error">
-                        <h3>⚠ Error</h3>
-                        <p>${errorMessage}</p>
-                        ${hint}
+                        <h3>Error</h3>
+                        <p>${error.message || 'Could not generate forecast. Please try again.'}</p>
                     </div>
                 `;
             }
         }
+
+        // ============================================
+        // SOCIAL SHARING
+        // ============================================
+        
+        function shareForecast() {
+            const location = document.getElementById('location').value;
+            const species = document.getElementById('species').options[document.getElementById('species').selectedIndex].text;
+            const scoreElement = document.querySelector('.score-display');
+            const ratingElement = document.querySelector('.rating');
+            
+            if (!scoreElement) return;
+            
+            const score = scoreElement.textContent;
+            const rating = ratingElement.textContent;
+            
+            const shareData = {
+                title: 'FishCast Fishing Forecast',
+                text: `🎣 ${species} fishing at ${location}:\nScore: ${score}/100 (${rating})\n\nCheck it out on FishCast!`,
+                url: window.location.href
+            };
+            
+            if (navigator.share) {
+                navigator.share(shareData).catch(() => {});
+            } else {
+                const text = `${shareData.text}\n${shareData.url}`;
+                navigator.clipboard.writeText(text).then(() => {
+                    showNotification('Forecast copied to clipboard!');
+                });
+            }
+        }
+
+        function saveFavorite() {
+            const location = document.getElementById('location').value;
+            const name = prompt('Name this fishing spot:', location);
+            
+            if (name) {
+                favoritesManager.add(name, location);
+                showNotification('Saved to favorites!');
+            }
+        }
+
+        // ============================================
+        // PUSH NOTIFICATIONS
+        // ============================================
+        
+        function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                alert('This browser does not support notifications');
+                return;
+            }
+            
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    showNotification('Notifications enabled! We\'ll alert you when conditions are excellent.');
+                    localStorage.setItem('notifications_enabled', 'true');
+                } else {
+                    alert('Notifications blocked. Enable them in browser settings to get fishing alerts.');
+                }
+            });
+        }
+
+        function checkNotificationConditions(todayScore, futureScores) {
+            if (localStorage.getItem('notifications_enabled') !== 'true') return;
+            if (Notification.permission !== 'granted') return;
+            
+            futureScores.forEach((day, index) => {
+                if (day.score >= 85 && index === 0) {
+                    new Notification('🎣 Excellent Fishing Tomorrow!', {
+                        body: `Score: ${day.score}/100 - Prime conditions for fishing!`,
+                        icon: 'icon-192.png'
+                    });
+                }
+            });
+        }
+
+        // ============================================
+        // EVENT LISTENERS & INITIALIZATION
+        // ============================================
+        
+        const daysSlider = document.getElementById('days');
+        const daysValue = document.getElementById('daysValue');
+        daysSlider.addEventListener('input', (e) => {
+            daysValue.textContent = e.target.value;
+        });
+
+        const locationInput = document.getElementById('location');
+        let validationTimeout;
+        
+        locationInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            
+            clearTimeout(validationTimeout);
+            locationInput.classList.remove('valid', 'invalid', 'validating');
+            
+            if (value.length < 2) return;
+            
+            locationInput.classList.add('validating');
+            
+            validationTimeout = setTimeout(() => {
+                const parsed = parseLocation(value);
+                
+                if (parsed.type === 'zip' || parsed.type === 'city_state') {
+                    locationInput.classList.remove('validating', 'invalid');
+                    locationInput.classList.add('valid');
+                } else if (parsed.type === 'city_only') {
+                    locationInput.classList.remove('validating');
+                } else {
+                    locationInput.classList.remove('validating', 'valid');
+                    locationInput.classList.add('invalid');
+                }
+            }, 500);
+        });
+
+        document.getElementById('geolocateBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('geolocateBtn');
+            const locationInput = document.getElementById('location');
+            
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = '⏳';
+            
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    try {
+                        const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+                        const response = await fetch(url, {
+                            headers: { 'User-Agent': 'FishCast/1.0' }
+                        });
+                        const data = await response.json();
+                        
+                        const city = data.address.city || data.address.town || data.address.village;
+                        const state = data.address.state;
+                        
+                        locationInput.value = `${city}, ${state}`;
+                        btn.textContent = '✓';
+                        setTimeout(() => {
+                            btn.textContent = '📍';
+                            btn.disabled = false;
+                        }, 2000);
+                    } catch (error) {
+                        alert('Could not determine location name');
+                        btn.textContent = '📍';
+                        btn.disabled = false;
+                    }
+                },
+                (error) => {
+                    alert('Unable to get your location. Please enter manually.');
+                    btn.textContent = '📍';
+                    btn.disabled = false;
+                }
+            );
+        });
 
         document.getElementById('forecastForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1198,12 +2184,28 @@
             submitBtn.textContent = 'Generate Forecast';
         });
 
-        // Register service worker for PWA functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const currentTheme = localStorage.getItem('theme') || 'light';
+
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+
+        themeToggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+        });
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
                 .then(reg => console.log('Service Worker registered'))
                 .catch(err => console.log('Service Worker registration failed'));
         }
+
+        window.shareF = shareForecast;
     </script>
 </body>
 </html>
