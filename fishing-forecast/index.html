@@ -214,21 +214,25 @@
         .geolocate-btn {
             width: 50px;
             padding: 12px;
-            background: #3498db;
-            color: white;
-            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
             border-radius: 2px;
             cursor: pointer;
             font-size: 1.2rem;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
         
         .geolocate-btn:hover {
-            background: #2980b9;
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
         }
         
         .geolocate-btn:disabled {
             background: #bdc3c7;
+            color: white;
+            border-color: #bdc3c7;
             cursor: not-allowed;
         }
         
