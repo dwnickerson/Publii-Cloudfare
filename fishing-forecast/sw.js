@@ -4,7 +4,16 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/fishing-forecast/',                    // ← matches start_url and root navigation for the app
+  '/fishing-forecast/index.html',          // ← explicit fallback if server serves index.html directly
+  '/fishing-forecast/manifest.json',
+  // Add your actual app assets here (relative to /fishing-forecast/)
+  '/fishing-forecast/styles.css',          // example — use real paths
+  '/fishing-forecast/app.js',              // example
+  '/fishing-forecast/icons/icon-192.png',
+  '/fishing-forecast/icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap'
+  // ... any other JS, CSS, images, API data (if static), etc.
 ];
 
 // Install service worker and cache resources
