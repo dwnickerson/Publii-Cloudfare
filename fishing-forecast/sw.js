@@ -1,19 +1,17 @@
 // FishCast Service Worker
-const CACHE_NAME = 'fishcast-v2';
+const CACHE_NAME = 'fishcast-v3';
+const APP_PATH = '/fishing-forecast/';
+
 const urlsToCache = [
-  '/fishing-forecast/',                    // ← matches start_url and root navigation for the app
-  '/fishing-forecast/index.html',          // ← explicit fallback if server serves index.html directly
-  '/fishing-forecast/manifest.json',
-  // Add your actual app assets here (relative to /fishing-forecast/)
-  '/fishing-forecast/styles.css',          // example — use real paths
-  '/fishing-forecast/app.js',              // example
-  '/fishing-forecast/icons/icon-192.png',
-  '/fishing-forecast/icons/icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap'
-  // ... any other JS, CSS, images, API data (if static), etc.
+  APP_PATH,
+  APP_PATH + 'index.html',
+  APP_PATH + 'manifest.json',
+  'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap',
+  'https://fonts.gstatic.com/s/cinzel/v23/8vIU7ww63mVu7gtL-KM.woff2',
+  'https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHjx4wXg.woff2'
 ];
 
-// Install service worker and cache resources
+// Install event - cache resources
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -21,54 +19,70 @@ self.addEventListener('install', event => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
+      .then(() => self.skipWaiting()) // Activate immediately
   );
 });
 
-// Fetch from cache, fallback to network
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-
-        // Clone the request
-        const fetchRequest = event.request.clone();
-
-        return fetch(fetchRequest).then(response => {
-          // Check if valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Clone the response
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
-        });
-      })
-  );
-});
-
-// Clean up old caches
+// Activate event - clean up old caches
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Take control immediately
+  );
+});
+
+// Fetch event - serve from cache, fallback to network
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  
+  // Don't cache API requests to external services
+  if (url.hostname === 'api.open-meteo.com' || 
+      url.hostname === 'nominatim.openstreetmap.org' ||
+      url.hostname === 'script.google.com') {
+    // Network only for API calls
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  
+  // For app resources, try cache first, then network
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        if (response) {
+          // Cache hit - return cached version
+          return response;
+        }
+        
+        // Not in cache - fetch from network
+        return fetch(event.request).then(response => {
+          // Don't cache if not a valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+          
+          // Clone the response
+          const responseToCache = response.clone();
+          
+          // Cache the fetched resource
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+          
+          return response;
+        }).catch(() => {
+          // Network failed - if it's a navigation request, return cached index.html
+          if (event.request.mode === 'navigate') {
+            return caches.match(APP_PATH + 'index.html');
+          }
+        });
+      })
   );
 });
