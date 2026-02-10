@@ -986,6 +986,193 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-close" onclick="closeSettings()">×</span>
+                ⚙️ Settings
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <h4 style="margin-bottom: 15px; color: var(--text-primary);">Notifications</h4>
+                <div style="background: var(--input-bg); padding: 15px; border-radius: 2px; margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+                        <span style="color: var(--text-primary);">
+                            🔔 Enable fishing alerts
+                            <small style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">
+                                Get notified when conditions are excellent (score ≥85)
+                            </small>
+                        </span>
+                        <input type="checkbox" id="notificationToggle" style="width: 40px; height: 20px; cursor: pointer;">
+                    </label>
+                    <div id="notificationStatus" style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);"></div>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h4 style="margin-bottom: 15px; color: var(--text-primary);">Default Settings</h4>
+                <div style="background: var(--input-bg); padding: 15px; border-radius: 2px;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
+                            Default Location
+                        </label>
+                        <input type="text" id="defaultLocation" placeholder="e.g., Tupelo, MS" 
+                               style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 2px; background: var(--bg-secondary); color: var(--text-primary);">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
+                            Default Species
+                        </label>
+                        <select id="defaultSpecies" 
+                                style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 2px; background: var(--bg-secondary); color: var(--text-primary);">
+                            <option value="">None (always ask)</option>
+                            <option value="bass">Largemouth Bass</option>
+                            <option value="crappie">Crappie</option>
+                            <option value="bluegill">Bluegill</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
+                            Default Water Body
+                        </label>
+                        <select id="defaultWaterBody" 
+                                style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 2px; background: var(--bg-secondary); color: var(--text-primary);">
+                            <option value="">None (always ask)</option>
+                            <option value="pond">Pond (< 10 acres)</option>
+                            <option value="lake">Lake (10-500 acres)</option>
+                            <option value="reservoir">Reservoir (> 500 acres)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h4 style="margin-bottom: 15px; color: var(--text-primary);">Data Management</h4>
+                <div style="background: var(--input-bg); padding: 15px; border-radius: 2px;">
+                    <button onclick="exportAllData()" class="action-btn" style="width: 100%; margin-bottom: 10px;">
+                        📥 Export All Data (JSON)
+                    </button>
+                    <button onclick="clearAllData()" class="action-btn" style="width: 100%; background: #e74c3c; border-color: #e74c3c;">
+                        🗑️ Clear All Data
+                    </button>
+                    <small style="display: block; margin-top: 10px; color: var(--text-secondary);">
+                        This will delete all favorites, catches, and settings. This cannot be undone.
+                    </small>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="saveSettings()" class="action-btn primary" style="width: 100%;">
+                    💾 Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-close" onclick="closeAbout()">×</span>
+                ℹ️ About FishCast
+            </div>
+            
+            <div style="padding: 10px 0;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div style="font-family: 'Cinzel', serif; font-size: 2.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">
+                        FishCast
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); letter-spacing: 2px; text-transform: uppercase;">
+                        Smart Fishing Forecasts
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 10px;">
+                        Version 1.0.0
+                    </div>
+                </div>
+
+                <div style="background: var(--input-bg); padding: 20px; border-radius: 2px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; color: var(--text-primary);">What is FishCast?</h4>
+                    <p style="color: var(--text-secondary); line-height: 1.6; margin: 0;">
+                        FishCast is a science-based fishing forecast app that combines meteorological data, 
+                        water temperature modeling, and solunar calculations to predict the best fishing times 
+                        for your favorite species and locations.
+                    </p>
+                </div>
+
+                <div style="background: var(--input-bg); padding: 20px; border-radius: 2px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; color: var(--text-primary);">Features</h4>
+                    <ul style="color: var(--text-secondary); line-height: 1.8; margin: 0; padding-left: 20px;">
+                        <li>Species-specific predictions (Bass, Crappie, Bluegill)</li>
+                        <li>Water temperature modeling with thermal lag</li>
+                        <li>Solunar major/minor feeding periods</li>
+                        <li>Weather radar integration</li>
+                        <li>Catch logging and tracking</li>
+                        <li>Favorite location management</li>
+                        <li>Dark mode support</li>
+                        <li>Works offline (PWA)</li>
+                    </ul>
+                </div>
+
+                <div style="background: var(--input-bg); padding: 20px; border-radius: 2px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; color: var(--text-primary);">Data Sources</h4>
+                    <ul style="color: var(--text-secondary); line-height: 1.8; margin: 0; padding-left: 20px;">
+                        <li><strong>Weather:</strong> Open-Meteo API (free, open-source)</li>
+                        <li><strong>Geocoding:</strong> OpenStreetMap Nominatim</li>
+                        <li><strong>Radar:</strong> Windy.com</li>
+                        <li><strong>Solunar:</strong> Astronomical calculations (in-app)</li>
+                    </ul>
+                </div>
+
+                <div style="background: var(--input-bg); padding: 20px; border-radius: 2px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; color: var(--text-primary);">Privacy</h4>
+                    <p style="color: var(--text-secondary); line-height: 1.6; margin: 0;">
+                        <strong>Your data stays on your device.</strong> FishCast does not collect, store, 
+                        or transmit any personal information. All favorites, catches, and settings are stored 
+                        locally in your browser. We don't use analytics, tracking, or third-party advertising.
+                    </p>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 2px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px;">How Scoring Works</h4>
+                    <p style="line-height: 1.6; margin: 0; font-size: 0.9rem;">
+                        Scores (0-100) combine water temperature, fish biology, barometric pressure trends, 
+                        wind conditions, moon phase, and weather patterns. The algorithm is based on scientific 
+                        research and field-tested data to predict fish activity levels.
+                    </p>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>80-100:</span> <strong>EXCELLENT</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>65-79:</span> <strong>GOOD</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>50-64:</span> <strong>FAIR</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>35-49:</span> <strong>POOR</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>0-34:</span> <strong>BAD</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; padding: 20px 0;">
+                    <p style="margin: 5px 0;">Made with ❤️ for anglers</p>
+                    <p style="margin: 5px 0;">© 2026 FishCast</p>
+                    <p style="margin: 15px 0 5px 0;">
+                        <a href="https://github.com/yourusername/fishcast" target="_blank" 
+                           style="color: var(--text-secondary); text-decoration: underline;">
+                            View on GitHub
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ============================================
         // CORE DATA & UTILITIES
@@ -1775,7 +1962,7 @@
                         <button class="action-btn primary" onclick="openCatchLog()">📊 Log Catch</button>
                         <button class="action-btn" onclick="shareF()">📱 Share</button>
                         <button class="action-btn" onclick="saveFavorite()">⭐ Save Location</button>
-                        <button class="action-btn" onclick="requestNotificationPermission()">🔔 Enable Alerts</button>
+                        <button class="action-btn" onclick="openSettings()">🔔 Notification Settings</button>
                     </div>
                     
                     <div class="tips-card">
@@ -2210,6 +2397,168 @@
         }
 
         window.shareF = shareForecast;
+
+        // Settings Modal Functions
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('show');
+            loadSettings();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('show');
+        }
+
+        function loadSettings() {
+            // Load notification status
+            const notifToggle = document.getElementById('notificationToggle');
+            const notifStatus = document.getElementById('notificationStatus');
+            
+            if (Notification.permission === 'granted') {
+                notifToggle.checked = true;
+                notifStatus.textContent = '✅ Notifications enabled';
+                notifStatus.style.color = '#27ae60';
+            } else if (Notification.permission === 'denied') {
+                notifToggle.checked = false;
+                notifToggle.disabled = true;
+                notifStatus.textContent = '❌ Notifications blocked. Enable in browser settings.';
+                notifStatus.style.color = '#e74c3c';
+            } else {
+                notifToggle.checked = false;
+                notifStatus.textContent = 'Click to enable notifications';
+                notifStatus.style.color = 'var(--text-secondary)';
+            }
+
+            // Load defaults
+            document.getElementById('defaultLocation').value = localStorage.getItem('default_location') || '';
+            document.getElementById('defaultSpecies').value = localStorage.getItem('default_species') || '';
+            document.getElementById('defaultWaterBody').value = localStorage.getItem('default_water_body') || '';
+        }
+
+        function saveSettings() {
+            // Save defaults
+            localStorage.setItem('default_location', document.getElementById('defaultLocation').value);
+            localStorage.setItem('default_species', document.getElementById('defaultSpecies').value);
+            localStorage.setItem('default_water_body', document.getElementById('defaultWaterBody').value);
+            
+            showNotification('Settings saved!');
+            
+            // Apply defaults to form if empty
+            const locationInput = document.getElementById('location');
+            if (!locationInput.value && localStorage.getItem('default_location')) {
+                locationInput.value = localStorage.getItem('default_location');
+            }
+            
+            const speciesSelect = document.getElementById('species');
+            if (localStorage.getItem('default_species')) {
+                speciesSelect.value = localStorage.getItem('default_species');
+            }
+            
+            const waterTypeSelect = document.getElementById('waterType');
+            if (localStorage.getItem('default_water_body')) {
+                waterTypeSelect.value = localStorage.getItem('default_water_body');
+            }
+            
+            closeSettings();
+        }
+
+        function exportAllData() {
+            const data = {
+                favorites: JSON.parse(localStorage.getItem('fishcast_favorites') || '[]'),
+                catches: JSON.parse(localStorage.getItem('fishcast_catches') || '[]'),
+                settings: {
+                    theme: localStorage.getItem('theme') || 'light',
+                    default_location: localStorage.getItem('default_location') || '',
+                    default_species: localStorage.getItem('default_species') || '',
+                    default_water_body: localStorage.getItem('default_water_body') || '',
+                    notifications_enabled: localStorage.getItem('notifications_enabled') || 'false'
+                },
+                exported_at: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fishcast-data-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showNotification('Data exported successfully!');
+        }
+
+        function clearAllData() {
+            if (!confirm('Are you sure you want to delete ALL data? This includes favorites, catches, and settings. This cannot be undone!')) {
+                return;
+            }
+
+            if (!confirm('Really sure? This will permanently delete everything!')) {
+                return;
+            }
+
+            localStorage.removeItem('fishcast_favorites');
+            localStorage.removeItem('fishcast_catches');
+            localStorage.removeItem('default_location');
+            localStorage.removeItem('default_species');
+            localStorage.removeItem('default_water_body');
+            localStorage.removeItem('notifications_enabled');
+
+            showNotification('All data cleared!', 'error');
+            
+            // Reload managers
+            favoritesManager.favorites = [];
+            favoritesManager.render();
+            
+            closeSettings();
+        }
+
+        // Notification toggle handler
+        document.addEventListener('DOMContentLoaded', () => {
+            const notifToggle = document.getElementById('notificationToggle');
+            if (notifToggle) {
+                notifToggle.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        requestNotificationPermission();
+                    }
+                });
+            }
+        });
+
+        // About Modal Functions
+        function openAbout() {
+            document.getElementById('aboutModal').classList.add('show');
+        }
+
+        function closeAbout() {
+            document.getElementById('aboutModal').classList.remove('show');
+        }
+
+        // Link event listeners
+        document.getElementById('settingsLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            openSettings();
+        });
+
+        document.getElementById('aboutLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            openAbout();
+        });
+
+        // Load defaults on page load
+        window.addEventListener('load', () => {
+            const defaultLocation = localStorage.getItem('default_location');
+            const defaultSpecies = localStorage.getItem('default_species');
+            const defaultWaterBody = localStorage.getItem('default_water_body');
+
+            if (defaultLocation) {
+                document.getElementById('location').value = defaultLocation;
+            }
+            if (defaultSpecies) {
+                document.getElementById('species').value = defaultSpecies;
+            }
+            if (defaultWaterBody) {
+                document.getElementById('waterType').value = defaultWaterBody;
+            }
+        });
     </script>
 </body>
 </html>
