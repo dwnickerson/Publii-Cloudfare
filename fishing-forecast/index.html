@@ -85,6 +85,8 @@
             top: 20px;
             right: 20px;
             z-index: 100;
+            display: flex;
+            gap: 10px;
         }
         
         .theme-toggle button {
@@ -883,6 +885,7 @@
 <body>
     <!-- Theme Toggle -->
     <div class="theme-toggle">
+        <button id="waterTempBtn" onclick="openTempReport()" title="Submit water temperature">🌡️</button>
         <button id="themeToggle" title="Toggle dark mode">🌙</button>
     </div>
 
@@ -1063,10 +1066,27 @@
         <div class="modal-content">
             <div class="modal-header">
                 <span class="modal-close" onclick="closeTempReport()">×</span>
-                🌡️ Report Water Temperature
+                🌡️ Submit Water Temperature
             </div>
             
             <form id="tempReportForm" onsubmit="submitTempReport(event); return false;">
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
+                        Location (City, State) *
+                    </label>
+                    <input type="text" id="reportLocation" required
+                           placeholder="e.g., Tupelo, MS"
+                           style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 2px; background: var(--input-bg); color: var(--text-primary);">
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
+                        Time *
+                    </label>
+                    <input type="datetime-local" id="reportDateTime" required
+                           style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 2px; background: var(--input-bg); color: var(--text-primary);">
+                </div>
+
                 <div style="margin: 20px 0;">
                     <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
                         Water Temperature (°F) *
@@ -1091,7 +1111,7 @@
 
                 <div style="margin: 20px 0;">
                     <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
-                        Depth (feet) - Optional
+                        Depth of reading (feet) - Optional
                     </label>
                     <input type="number" id="reportDepth" step="1"
                            placeholder="e.g., 5"
@@ -2030,7 +2050,7 @@
                         <button class="action-btn primary" onclick="openCatchLog()">📊 Log Catch</button>
                         <button class="action-btn" onclick="shareF()">📱 Share</button>
                         <button class="action-btn" onclick="saveFavorite()">⭐ Save Location</button>
-                        <button class="action-btn success" onclick="openTempReport()">🌡️ Report Water Temp</button>
+                        <button class="action-btn success" onclick="openTempReport()">Submit Water Temp</button>
                     </div>
                     
                     <div class="tips-card">
@@ -2439,20 +2459,18 @@
         window.shareF = shareForecast;
 
         // Water Temp Report Functions
-        let currentReportLocation = '';
-        let currentReportCoords = { lat: 0, lon: 0 };
 
         function openTempReport() {
-            // Get current location from form or last forecast
-            const locationInput = document.getElementById('location');
-            currentReportLocation = locationInput.value || 'Unknown Location';
+            // Set current date/time as default
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const dateTimeLocal = `${year}-${month}-${day}T${hours}:${minutes}`;
             
-            // If we have currentForecastData from last forecast, use those coords
-            if (window.currentForecastData && window.currentForecastData.coords) {
-                currentReportCoords.lat = window.currentForecastData.coords.lat;
-                currentReportCoords.lon = window.currentForecastData.coords.lon;
-            }
-            
+            document.getElementById('reportDateTime').value = dateTimeLocal;
             document.getElementById('tempReportModal').classList.add('show');
         }
 
@@ -2464,23 +2482,37 @@
         async function submitTempReport(event) {
             event.preventDefault();
             
+            const location = document.getElementById('reportLocation').value;
+            const dateTime = document.getElementById('reportDateTime').value;
             const temp = document.getElementById('reportTemp').value;
             const waterBody = document.getElementById('reportWaterBody').value;
             const depth = document.getElementById('reportDepth').value;
             const notes = document.getElementById('reportNotes').value;
             
-            if (!temp || !waterBody) {
-                alert('Please fill in required fields');
+            if (!location || !dateTime || !temp || !waterBody) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            // Geocode the location
+            let coords = { lat: 0, lon: 0 };
+            try {
+                const geoData = await getLocation(location);
+                coords.lat = geoData.lat;
+                coords.lon = geoData.lon;
+            } catch (error) {
+                console.error('Geocoding failed:', error);
+                alert('Could not find location. Please check your entry and try again.');
                 return;
             }
             
             const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbySp_91L4EPOFXFx2528Q7TPfRtQi9dBiR4l2CSWpnrJ_x2UdZGamdiqsS7bYOQ38R8bg/exec';
             
             const data = {
-                timestamp: new Date().toISOString(),
-                location: currentReportLocation,
-                latitude: currentReportCoords.lat,
-                longitude: currentReportCoords.lon,
+                timestamp: new Date(dateTime).toISOString(),
+                location: location,
+                latitude: coords.lat,
+                longitude: coords.lon,
                 waterBody: waterBody,
                 temperature: parseFloat(temp),
                 depth: depth ? parseInt(depth) : '',
