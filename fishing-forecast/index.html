@@ -889,7 +889,7 @@
     <div class="container">
         <header>
             <div class="logo-text">FishCast</div>
-            <div class="subtitle">Fishing Forecast</div>
+            <div class="subtitle">by The Southern Bluegill Association</div>
         </header>
 
         <!-- Favorites Section -->
@@ -958,11 +958,15 @@
         <div id="results"></div>
 
         <footer>
-            <p>FishCast | Weather data from Open-Meteo</p>
+            <p><strong>FishCast</strong> - A product of The Southern Bluegill Association</p>
+            <p style="margin-top: 10px;">
+                <a href="mailto:thesouthernbluegill@gmail.com" style="color: var(--text-secondary); text-decoration: none;">thesouthernbluegill@gmail.com</a>
+            </p>
             <p style="margin-top: 10px;">
                 <a href="#" id="aboutLink" style="color: var(--text-secondary); text-decoration: none;">About</a> | 
                 <a href="#" id="settingsLink" style="color: var(--text-secondary); text-decoration: none;">Settings</a>
             </p>
+            <p style="margin-top: 15px; font-size: 0.85rem;">© 2026 The Southern Bluegill Association. All rights reserved.</p>
         </footer>
     </div>
 
@@ -994,22 +998,6 @@
                 ⚙️ Settings
             </div>
             
-            <div style="margin: 20px 0;">
-                <h4 style="margin-bottom: 15px; color: var(--text-primary);">Notifications</h4>
-                <div style="background: var(--input-bg); padding: 15px; border-radius: 2px; margin-bottom: 20px;">
-                    <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-                        <span style="color: var(--text-primary);">
-                            🔔 Enable fishing alerts
-                            <small style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-top: 5px;">
-                                Get notified when conditions are excellent (score ≥85)
-                            </small>
-                        </span>
-                        <input type="checkbox" id="notificationToggle" style="width: 40px; height: 20px; cursor: pointer;">
-                    </label>
-                    <div id="notificationStatus" style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);"></div>
-                </div>
-            </div>
-
             <div style="margin: 20px 0;">
                 <h4 style="margin-bottom: 15px; color: var(--text-primary);">Default Settings</h4>
                 <div style="background: var(--input-bg); padding: 15px; border-radius: 2px;">
@@ -1070,6 +1058,70 @@
         </div>
     </div>
 
+    <!-- Water Temp Report Modal -->
+    <div id="tempReportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-close" onclick="closeTempReport()">×</span>
+                🌡️ Report Water Temperature
+            </div>
+            
+            <form id="tempReportForm" onsubmit="submitTempReport(event); return false;">
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
+                        Water Temperature (°F) *
+                    </label>
+                    <input type="number" id="reportTemp" step="0.1" required
+                           placeholder="e.g., 52.5"
+                           style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 2px; background: var(--input-bg); color: var(--text-primary);">
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
+                        Water Body Type *
+                    </label>
+                    <select id="reportWaterBody" required
+                            style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 2px; background: var(--input-bg); color: var(--text-primary);">
+                        <option value="">Select type...</option>
+                        <option value="pond">Pond (< 10 acres)</option>
+                        <option value="lake">Lake (10-500 acres)</option>
+                        <option value="reservoir">Reservoir (> 500 acres)</option>
+                    </select>
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
+                        Depth (feet) - Optional
+                    </label>
+                    <input type="number" id="reportDepth" step="1"
+                           placeholder="e.g., 5"
+                           style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 2px; background: var(--input-bg); color: var(--text-primary);">
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-primary); font-size: 0.9rem;">
+                        Notes - Optional
+                    </label>
+                    <textarea id="reportNotes" rows="3"
+                              placeholder="e.g., Clear water, sunny day, caught 3 bass"
+                              style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 2px; background: var(--input-bg); color: var(--text-primary); resize: vertical; font-family: 'Lato', sans-serif;"></textarea>
+                </div>
+
+                <div style="background: #e8f4f8; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #3498db;">
+                    <p style="margin: 0; color: #2c3e50; font-size: 0.9rem;">
+                        ℹ️ <strong>Privacy Notice:</strong> Your location coordinates will be shared anonymously 
+                        to help improve forecast accuracy for all anglers. This data helps The Southern Bluegill Association 
+                        build better predictions for the entire fishing community.
+                    </p>
+                </div>
+
+                <button type="submit" style="width: 100%; padding: 16px; background: #27ae60; color: white; border: none; border-radius: 2px; font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">
+                    📤 Submit Report
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- About Modal -->
     <div id="aboutModal" class="modal">
         <div class="modal-content">
@@ -1126,10 +1178,26 @@
 
                 <div style="background: var(--input-bg); padding: 20px; border-radius: 2px; margin-bottom: 20px;">
                     <h4 style="margin-bottom: 10px; color: var(--text-primary);">Privacy</h4>
-                    <p style="color: var(--text-secondary); line-height: 1.6; margin: 0;">
+                    <p style="color: var(--text-secondary); line-height: 1.6; margin: 0 0 15px 0;">
                         <strong>Your data stays on your device.</strong> FishCast does not collect, store, 
                         or transmit any personal information. All favorites, catches, and settings are stored 
                         locally in your browser. We don't use analytics, tracking, or third-party advertising.
+                    </p>
+                    
+                    <h5 style="margin: 15px 0 10px 0; color: var(--text-primary);">Water Temperature Reports (Optional)</h5>
+                    <p style="color: var(--text-secondary); line-height: 1.6; margin: 0;">
+                        When you voluntarily submit a water temperature report, the following data is shared 
+                        anonymously with The Southern Bluegill Association to improve forecast accuracy for all anglers:
+                    </p>
+                    <ul style="color: var(--text-secondary); line-height: 1.6; margin: 10px 0 10px 20px; padding: 0;">
+                        <li>Location coordinates (city-level precision)</li>
+                        <li>Water temperature measurement</li>
+                        <li>Water body type (pond/lake/reservoir)</li>
+                        <li>Optional: depth and notes</li>
+                    </ul>
+                    <p style="color: var(--text-secondary); line-height: 1.6; margin: 10px 0 0 0;">
+                        <strong>This data is:</strong> ✅ Anonymous ✅ Voluntary ✅ Used only to improve forecasts 
+                        ✅ Shared with the fishing community ❌ Never sold or used for advertising
                     </p>
                 </div>
 
@@ -1160,12 +1228,12 @@
                 </div>
 
                 <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; padding: 20px 0;">
-                    <p style="margin: 5px 0;">Made with ❤️ for anglers</p>
-                    <p style="margin: 5px 0;">© 2026 FishCast</p>
+                    <p style="margin: 5px 0;">A product of The Southern Bluegill Association</p>
+                    <p style="margin: 5px 0;">© 2026 The Southern Bluegill Association</p>
                     <p style="margin: 15px 0 5px 0;">
-                        <a href="https://github.com/yourusername/fishcast" target="_blank" 
+                        <a href="mailto:thesouthernbluegill@gmail.com" 
                            style="color: var(--text-secondary); text-decoration: underline;">
-                            View on GitHub
+                            thesouthernbluegill@gmail.com
                         </a>
                     </p>
                 </div>
@@ -1684,7 +1752,7 @@
                 notification.style.background = '#e74c3c';
             }
             document.body.appendChild(notification);
-            
+
             setTimeout(() => {
                 notification.remove();
             }, 3000);
@@ -1962,7 +2030,7 @@
                         <button class="action-btn primary" onclick="openCatchLog()">📊 Log Catch</button>
                         <button class="action-btn" onclick="shareF()">📱 Share</button>
                         <button class="action-btn" onclick="saveFavorite()">⭐ Save Location</button>
-                        <button class="action-btn" onclick="openSettings()">🔔 Notification Settings</button>
+                        <button class="action-btn success" onclick="openTempReport()">🌡️ Report Water Temp</button>
                     </div>
                     
                     <div class="tips-card">
@@ -2184,7 +2252,7 @@
                 
                 resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 
-                checkNotificationConditions(currentScore.score, allDailyScores);
+
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -2242,35 +2310,7 @@
         // PUSH NOTIFICATIONS
         // ============================================
         
-        function requestNotificationPermission() {
-            if (!('Notification' in window)) {
-                alert('This browser does not support notifications');
-                return;
-            }
-            
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    showNotification('Notifications enabled! We\'ll alert you when conditions are excellent.');
-                    localStorage.setItem('notifications_enabled', 'true');
-                } else {
-                    alert('Notifications blocked. Enable them in browser settings to get fishing alerts.');
-                }
-            });
-        }
 
-        function checkNotificationConditions(todayScore, futureScores) {
-            if (localStorage.getItem('notifications_enabled') !== 'true') return;
-            if (Notification.permission !== 'granted') return;
-            
-            futureScores.forEach((day, index) => {
-                if (day.score >= 85 && index === 0) {
-                    new Notification('🎣 Excellent Fishing Tomorrow!', {
-                        body: `Score: ${day.score}/100 - Prime conditions for fishing!`,
-                        icon: 'icon-192.png'
-                    });
-                }
-            });
-        }
 
         // ============================================
         // EVENT LISTENERS & INITIALIZATION
@@ -2391,16 +2431,100 @@
         });
 
         if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/fishing-forecast/sw.js', { scope: '/fishing-forecast/' })
-        .then(reg => {
-            console.log('Service Worker registered with scope:', reg.scope);
-        })
-        .catch(err => {
-            console.error('Service Worker registration failed:', err);
-        });
-}
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed'));
+        }
 
         window.shareF = shareForecast;
+
+        // Water Temp Report Functions
+        let currentReportLocation = '';
+        let currentReportCoords = { lat: 0, lon: 0 };
+
+        function openTempReport() {
+            // Get current location from form or last forecast
+            const locationInput = document.getElementById('location');
+            currentReportLocation = locationInput.value || 'Unknown Location';
+            
+            // If we have currentForecastData from last forecast, use those coords
+            if (window.currentForecastData && window.currentForecastData.coords) {
+                currentReportCoords.lat = window.currentForecastData.coords.lat;
+                currentReportCoords.lon = window.currentForecastData.coords.lon;
+            }
+            
+            document.getElementById('tempReportModal').classList.add('show');
+        }
+
+        function closeTempReport() {
+            document.getElementById('tempReportModal').classList.remove('show');
+            document.getElementById('tempReportForm').reset();
+        }
+
+        async function submitTempReport(event) {
+            event.preventDefault();
+            
+            const temp = document.getElementById('reportTemp').value;
+            const waterBody = document.getElementById('reportWaterBody').value;
+            const depth = document.getElementById('reportDepth').value;
+            const notes = document.getElementById('reportNotes').value;
+            
+            if (!temp || !waterBody) {
+                alert('Please fill in required fields');
+                return;
+            }
+            
+            const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbySp_91L4EPOFXFx2528Q7TPfRtQi9dBiR4l2CSWpnrJ_x2UdZGamdiqsS7bYOQ38R8bg/exec';
+            
+            const data = {
+                timestamp: new Date().toISOString(),
+                location: currentReportLocation,
+                latitude: currentReportCoords.lat,
+                longitude: currentReportCoords.lon,
+                waterBody: waterBody,
+                temperature: parseFloat(temp),
+                depth: depth ? parseInt(depth) : '',
+                notes: notes,
+                userAgent: navigator.userAgent
+            };
+            
+            try {
+                // Show submitting state
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '📤 Submitting...';
+                submitBtn.disabled = true;
+                
+                await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                // Success
+                showNotification('Thank you! Your water temperature report helps improve accuracy for all anglers.', 'success');
+                closeTempReport();
+                
+                // Reset button
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                
+            } catch (error) {
+                console.error('Error submitting report:', error);
+                showNotification('Could not submit report. Please check your internet connection and try again.', 'error');
+                
+                // Reset button
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                submitBtn.textContent = '📤 Submit Report';
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Store forecast data globally for water temp reporting
+        window.currentForecastData = null;
 
         // Settings Modal Functions
         function openSettings() {
@@ -2413,25 +2537,6 @@
         }
 
         function loadSettings() {
-            // Load notification status
-            const notifToggle = document.getElementById('notificationToggle');
-            const notifStatus = document.getElementById('notificationStatus');
-            
-            if (Notification.permission === 'granted') {
-                notifToggle.checked = true;
-                notifStatus.textContent = '✅ Notifications enabled';
-                notifStatus.style.color = '#27ae60';
-            } else if (Notification.permission === 'denied') {
-                notifToggle.checked = false;
-                notifToggle.disabled = true;
-                notifStatus.textContent = '❌ Notifications blocked. Enable in browser settings.';
-                notifStatus.style.color = '#e74c3c';
-            } else {
-                notifToggle.checked = false;
-                notifStatus.textContent = 'Click to enable notifications';
-                notifStatus.style.color = 'var(--text-secondary)';
-            }
-
             // Load defaults
             document.getElementById('defaultLocation').value = localStorage.getItem('default_location') || '';
             document.getElementById('defaultSpecies').value = localStorage.getItem('default_species') || '';
@@ -2514,18 +2619,6 @@
             
             closeSettings();
         }
-
-        // Notification toggle handler
-        document.addEventListener('DOMContentLoaded', () => {
-            const notifToggle = document.getElementById('notificationToggle');
-            if (notifToggle) {
-                notifToggle.addEventListener('change', (e) => {
-                    if (e.target.checked) {
-                        requestNotificationPermission();
-                    }
-                });
-            }
-        });
 
         // About Modal Functions
         function openAbout() {
