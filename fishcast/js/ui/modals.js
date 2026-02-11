@@ -1,5 +1,5 @@
-// Modal Handlers with Gamification - VERSION 3.3.2
-console.log('📦 modals.js VERSION 3.3.2 loaded - WITH DEBUG LOGGING');
+// Modal Handlers with Gamification - VERSION 3.3.3 FINAL FIX
+console.log('📦 modals.js VERSION 3.3.3 loaded - BUTTON CLICK FIX');
 
 import { storage } from '../services/storage.js';
 
@@ -80,7 +80,7 @@ export function openTempReportModal() {
                     ${userStats.totalReports >= 50 ? '<div>💎 Expert Contributor</div>' : ''}
                 </div>
                 
-                <form id="tempReportForm">
+                <form id="tempReportForm" action="" onsubmit="event.preventDefault(); return false;">
                     <div class="form-group">
                         <label for="tempReportLocation">Location</label>
                         <div style="display: flex; gap: 10px;">
@@ -118,7 +118,7 @@ export function openTempReportModal() {
                     </div>
                     
                     <div style="display: flex; gap: 10px; margin-top: 30px;">
-                        <button type="submit" class="action-btn success" style="flex: 1;">Submit Report</button>
+                        <button type="button" class="action-btn success" style="flex: 1;" onclick="window.handleWaterTempSubmit()">Submit Report</button>
                         <button type="button" class="action-btn" onclick="window.closeTempReport()" style="flex: 1;">Cancel</button>
                     </div>
                 </form>
@@ -351,6 +351,7 @@ export const submitTempReport = handleTempReportSubmit;
 // Make functions globally available
 window.openTempReport = openTempReportModal;
 window.closeTempReport = closeTempReportModal;
+window.handleWaterTempSubmit = handleTempReportSubmit;
 
 // Export for other modules
 export { getUserStats, updateUserStats };
