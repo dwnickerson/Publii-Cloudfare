@@ -233,13 +233,14 @@ function setupEventListeners() {
     });
 }
 
-// Service worker registration
+// Service worker registration - DISABLED FOR DEVELOPMENT
 function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/fishcast/sw.js')
-            .then(reg => console.log('✅ Service Worker registered'))
-            .catch(err => console.log('❌ Service Worker registration failed:', err));
-    }
+    console.log('⚠️ Service Worker disabled for development');
+    // if ('serviceWorker' in navigator) {
+    //     navigator.serviceWorker.register('/fishcast/sw.js')
+    //         .then(reg => console.log('✅ Service Worker registered'))
+    //         .catch(err => console.log('❌ Service Worker registration failed:', err));
+    // }
 }
 
 // Make functions available globally for onclick handlers
