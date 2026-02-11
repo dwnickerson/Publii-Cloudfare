@@ -1,5 +1,5 @@
-// Modal Handlers with Gamification - VERSION 3.3.1
-console.log('📦 modals.js VERSION 3.3.1 loaded');
+// Modal Handlers with Gamification - VERSION 3.3.2
+console.log('📦 modals.js VERSION 3.3.2 loaded - WITH DEBUG LOGGING');
 
 import { storage } from '../services/storage.js';
 
@@ -60,7 +60,10 @@ function showBadgeEarned(title, message) {
 
 // Water temperature report modal
 export function openTempReportModal() {
+    console.log('🔵 openTempReportModal called');
+    
     const userStats = getUserStats();
+    console.log('📊 User stats:', userStats);
     
     const modalHTML = `
         <div class="modal show" id="tempReportModal" onclick="if(event.target === this) window.closeTempReport()">
@@ -123,9 +126,21 @@ export function openTempReportModal() {
         </div>
     `;
     
+    console.log('🔵 Inserting modal HTML into page...');
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+    console.log('✅ Modal HTML inserted');
+    
+    // Check if form exists
+    const form = document.getElementById('tempReportForm');
+    console.log('🔵 Form element:', form);
+    
+    if (!form) {
+        console.error('❌ ERROR: Form not found after inserting modal!');
+        return;
+    }
     
     // Auto-location handler
+    console.log('🔵 Attaching geo button listener...');
     document.getElementById('tempReportGeoBtn').addEventListener('click', async () => {
         if (!navigator.geolocation) {
             alert('Geolocation not supported');
@@ -158,10 +173,19 @@ export function openTempReportModal() {
     });
     
     // Form submission
-    document.getElementById('tempReportForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await handleTempReportSubmit();
-    });
+    console.log('🔵 Attaching form submit listener...');
+    const formElement = document.getElementById('tempReportForm');
+    if (formElement) {
+        formElement.addEventListener('submit', async (e) => {
+            console.log('🔵 Form submit event fired!');
+            e.preventDefault();
+            console.log('🔵 Default prevented, calling handleTempReportSubmit...');
+            await handleTempReportSubmit();
+        });
+        console.log('✅ Form submit listener attached successfully');
+    } else {
+        console.error('❌ ERROR: Cannot attach submit listener - form not found!');
+    }
 }
 
 // Handle temperature report submission
