@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
     <title>FishCast - Smart Fishing Forecasts</title>
-    <link rel="stylesheet" href="styles/main.css?v=2.2">
+    <link rel="stylesheet" href="styles/main.css?v=3.2">
 </head>
 <body>
     <!-- Theme & Water Temp Buttons -->
@@ -47,9 +47,24 @@
                 <div class="form-group">
                     <label for="species">Target Species</label>
                     <select id="species" required>
-                        <option value="bass">Largemouth Bass</option>
-                        <option value="crappie">Crappie</option>
-                        <option value="bluegill">Bluegill</option>
+                        <optgroup label="🐟 True Sunfish">
+                            <option value="bluegill" selected>Bluegill</option>
+                            <option value="coppernose">Coppernose Bluegill</option>
+                            <option value="redear">Redear Sunfish (Shellcracker)</option>
+                            <option value="green_sunfish">Green Sunfish</option>
+                            <option value="warmouth">Warmouth</option>
+                            <option value="longear">Longear Sunfish</option>
+                            <option value="rock_bass">Rock Bass</option>
+                        </optgroup>
+                        <optgroup label="🎣 Black Bass">
+                            <option value="bass">Largemouth Bass</option>
+                            <option value="smallmouth">Smallmouth Bass</option>
+                            <option value="spotted">Spotted Bass (Kentucky Bass)</option>
+                        </optgroup>
+                        <optgroup label="🐠 Crappie">
+                            <option value="white_crappie">White Crappie</option>
+                            <option value="black_crappie">Black Crappie</option>
+                        </optgroup>
                     </select>
                 </div>
 
@@ -243,6 +258,6 @@
     </div>
 
     <!-- Load modular JavaScript -->
-    <script type="module" src="js/app.js?v=2.2"></script>
+    <script type="module" src="js/app.js?v=3.2"></script></script>
 </body>
 </html>
