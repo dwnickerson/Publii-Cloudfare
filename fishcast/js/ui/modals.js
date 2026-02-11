@@ -288,6 +288,11 @@ export function shareForecast() {
     console.log('Share feature coming soon!');
 }
 
+export function saveFavorite(locationData) {
+    console.log('Save favorite:', locationData);
+    window.showNotification('Favorites feature coming soon!', 'info');
+}
+
 // Aliases for compatibility
 export const openTempReport = openTempReportModal;
 export const closeTempReport = closeTempReportModal;
