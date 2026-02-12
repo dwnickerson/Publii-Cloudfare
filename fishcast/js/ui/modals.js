@@ -1,5 +1,5 @@
-// Modal Handlers with Gamification - VERSION 3.4.1 DOUBLE-SUBMIT FIX
-console.log('📦 modals.js VERSION 3.4.1 loaded - DOUBLE-SUBMIT FIX + Favorites + DateTime + Comprehensive About');
+// Modal Handlers with Gamification - VERSION 3.4.2 HOTFIX
+console.log('📦 modals.js VERSION 3.4.2 loaded - SYNTAX FIX + Double-Submit Prevention');
 
 import { storage } from '../services/storage.js';
 
@@ -350,142 +350,144 @@ export async function handleTempReportSubmit() {
         const waterbodyName = document.getElementById('tempReportWaterbody').value || '';
         const location = document.getElementById('tempReportLocation').value || '';
         const waterBody = document.getElementById('tempReportWaterBody').value || '';
-    const temperature = parseFloat(document.getElementById('tempReportTemp').value);
-    const depth = parseFloat(document.getElementById('tempReportDepth').value);
-    const clarity = document.getElementById('tempReportClarity').value || '';
-    const notes = document.getElementById('tempReportNotes').value || '';
-    
-    // Get measurement date and time
-    const measurementDate = document.getElementById('tempReportDate').value;
-    const measurementTime = document.getElementById('tempReportTime').value;
-    
-    // Validate date/time
-    if (!measurementDate || !measurementTime) {
-        resetSubmitButton();
-        showNotification('❌ Please enter the date and time of your measurement', 'error');
-        return;
-    }
-    
-    // Create timestamp from user-entered date and time
-    const measurementDateTime = new Date(`${measurementDate}T${measurementTime}`);
-    const now = new Date();
-    
-    // Validate not in the future (allow 5 minute grace period for clock differences)
-    if (measurementDateTime.getTime() > now.getTime() + (5 * 60 * 1000)) {
-        resetSubmitButton();
-        showNotification('❌ Measurement time cannot be in the future', 'error');
-        return;
-    }
-    
-    // Validate not too old (max 30 days in the past for data quality)
-    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-    if (measurementDateTime.getTime() < thirtyDaysAgo.getTime()) {
-        resetSubmitButton();
-        showNotification('⚠️ Measurements older than 30 days may not be accurate. Please submit recent data.', 'error');
-        return;
-    }
-    
-    console.log('Form data:', { waterbodyName, location, waterBody, temperature, depth, clarity, notes, measurementDate, measurementTime });
-    console.log('Measurement timestamp:', measurementDateTime.toISOString());
-    console.log('Form data types:', {
-        waterbodyName: typeof waterbodyName,
-        waterBody: typeof waterBody,
-        clarity: typeof clarity,
-        notes: typeof notes
-    });
-    
-    // Validate location format
-    if (!location || location.trim().length < 3) {
-        showNotification('❌ Please enter a valid location (City, State)', 'error');
-        return;
-    }
-    
-    // Check for comma (suggests "City, State" format)
-    if (!location.includes(',') && !location.includes(' ')) {
-        showNotification('⚠️ Location should be in "City, State" format (e.g., "Memphis, TN")', 'error');
-        return;
-    }
-    
-    if (isNaN(depth) || depth < 0) {
-        console.warn('Invalid depth:', depth);
-        showNotification('❌ Please enter a valid depth (0 or greater)', 'error');
-        return;
-    }
-    
-    // Geocode the location to get lat/long
-    console.log('🗺️ Geocoding location:', location);
-    let lat = null, lon = null;
-    
-    // Try geocoding with retry logic
-    for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-            console.log(`Geocoding attempt ${attempt}...`);
-            const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`;
-            const geocodeResponse = await fetch(geocodeUrl);
-            
-            if (!geocodeResponse.ok) {
-                throw new Error(`Geocoding API error: ${geocodeResponse.status}`);
-            }
-            
-            const geocodeData = await geocodeResponse.json();
-            
-            if (geocodeData && geocodeData.length > 0) {
-                lat = parseFloat(geocodeData[0].lat);
-                lon = parseFloat(geocodeData[0].lon);
-                console.log('✅ Geocoded:', { lat, lon });
-                break; // Success! Exit retry loop
-            } else {
-                console.warn(`⚠️ No results for location: "${location}"`);
+        const temperature = parseFloat(document.getElementById('tempReportTemp').value);
+        const depth = parseFloat(document.getElementById('tempReportDepth').value);
+        const clarity = document.getElementById('tempReportClarity').value || '';
+        const notes = document.getElementById('tempReportNotes').value || '';
+        
+        // Get measurement date and time
+        const measurementDate = document.getElementById('tempReportDate').value;
+        const measurementTime = document.getElementById('tempReportTime').value;
+        
+        // Validate date/time
+        if (!measurementDate || !measurementTime) {
+            resetSubmitButton();
+            showNotification('❌ Please enter the date and time of your measurement', 'error');
+            return;
+        }
+        
+        // Create timestamp from user-entered date and time
+        const measurementDateTime = new Date(`${measurementDate}T${measurementTime}`);
+        const now = new Date();
+        
+        // Validate not in the future (allow 5 minute grace period for clock differences)
+        if (measurementDateTime.getTime() > now.getTime() + (5 * 60 * 1000)) {
+            resetSubmitButton();
+            showNotification('❌ Measurement time cannot be in the future', 'error');
+            return;
+        }
+        
+        // Validate not too old (max 30 days in the past for data quality)
+        const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        if (measurementDateTime.getTime() < thirtyDaysAgo.getTime()) {
+            resetSubmitButton();
+            showNotification('⚠️ Measurements older than 30 days may not be accurate. Please submit recent data.', 'error');
+            return;
+        }
+        
+        console.log('Form data:', { waterbodyName, location, waterBody, temperature, depth, clarity, notes, measurementDate, measurementTime });
+        console.log('Measurement timestamp:', measurementDateTime.toISOString());
+        console.log('Form data types:', {
+            waterbodyName: typeof waterbodyName,
+            waterBody: typeof waterBody,
+            clarity: typeof clarity,
+            notes: typeof notes
+        });
+        
+        // Validate location format
+        if (!location || location.trim().length < 3) {
+            resetSubmitButton();
+            showNotification('❌ Please enter a valid location (City, State)', 'error');
+            return;
+        }
+        
+        // Check for comma (suggests "City, State" format)
+        if (!location.includes(',') && !location.includes(' ')) {
+            resetSubmitButton();
+            showNotification('⚠️ Location should be in "City, State" format (e.g., "Memphis, TN")', 'error');
+            return;
+        }
+        
+        if (isNaN(depth) || depth < 0) {
+            console.warn('Invalid depth:', depth);
+            resetSubmitButton();
+            showNotification('❌ Please enter a valid depth (0 or greater)', 'error');
+            return;
+        }
+        
+        // Geocode the location to get lat/long
+        console.log('🗺️ Geocoding location:', location);
+        let lat = null, lon = null;
+        
+        // Try geocoding with retry logic
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                console.log(`Geocoding attempt ${attempt}...`);
+                const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`;
+                const geocodeResponse = await fetch(geocodeUrl);
+                
+                if (!geocodeResponse.ok) {
+                    throw new Error(`Geocoding API error: ${geocodeResponse.status}`);
+                }
+                
+                const geocodeData = await geocodeResponse.json();
+                
+                if (geocodeData && geocodeData.length > 0) {
+                    lat = parseFloat(geocodeData[0].lat);
+                    lon = parseFloat(geocodeData[0].lon);
+                    console.log('✅ Geocoded:', { lat, lon });
+                    break; // Success! Exit retry loop
+                } else {
+                    console.warn(`⚠️ No results for location: "${location}"`);
+                    if (attempt === 2) {
+                        // Last attempt failed
+                        resetSubmitButton();
+                        showNotification('❌ Could not find location. Please enter "City, State" format (e.g., "Memphis, TN")', 'error');
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error(`❌ Geocoding error (attempt ${attempt}):`, error);
                 if (attempt === 2) {
                     // Last attempt failed
                     resetSubmitButton();
-                    showNotification('❌ Could not find location. Please enter "City, State" format (e.g., "Memphis, TN")', 'error');
+                    showNotification('❌ Geocoding failed. Please check your internet connection and try again.', 'error');
                     return;
                 }
+                // Wait 1 second before retry
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
-        } catch (error) {
-            console.error(`❌ Geocoding error (attempt ${attempt}):`, error);
-            if (attempt === 2) {
-                // Last attempt failed
-                resetSubmitButton();
-                showNotification('❌ Geocoding failed. Please check your internet connection and try again.', 'error');
-                return;
-            }
-            // Wait 1 second before retry
-            await new Promise(resolve => setTimeout(resolve, 1000));
         }
-    }
-    
-    // Final check - don't submit without coordinates
-    if (lat === null || lon === null) {
-        console.error('🚫 Geocoding failed completely. Not submitting.');
-        resetSubmitButton();
-        showNotification('❌ Cannot submit without location coordinates. Please try again.', 'error');
-        return;
-    }
-    
-    // NEW ORDER: A, B, C, D, E, F, G, H, I, J, K
-    const data = {
-        timestamp: measurementDateTime.toISOString(),  // A - ACTUAL measurement time, not submission time
-        location,                                 // B
-        latitude: lat,                            // C (from geocoding)
-        longitude: lon,                           // D (from geocoding)
-        waterbodyName,                            // E
-        waterBody,                                // F
-        temperature,                              // G
-        depth,                                    // H
-        clarity,                                  // I (NEW!)
-        notes,                                    // J
-        userAgent: navigator.userAgent            // K
-    };
-    
-    console.log('Submitting data:', data);
-    
-    const jsonBody = JSON.stringify(data);
-    console.log('📦 JSON body:', jsonBody);
-    console.log('📦 JSON length:', jsonBody.length);
-    
-    try {
+        
+        // Final check - don't submit without coordinates
+        if (lat === null || lon === null) {
+            console.error('🚫 Geocoding failed completely. Not submitting.');
+            resetSubmitButton();
+            showNotification('❌ Cannot submit without location coordinates. Please try again.', 'error');
+            return;
+        }
+        
+        // NEW ORDER: A, B, C, D, E, F, G, H, I, J, K
+        const data = {
+            timestamp: measurementDateTime.toISOString(),  // A - ACTUAL measurement time, not submission time
+            location,                                 // B
+            latitude: lat,                            // C (from geocoding)
+            longitude: lon,                           // D (from geocoding)
+            waterbodyName,                            // E
+            waterBody,                                // F
+            temperature,                              // G
+            depth,                                    // H
+            clarity,                                  // I (NEW!)
+            notes,                                    // J
+            userAgent: navigator.userAgent            // K
+        };
+        
+        console.log('Submitting data:', data);
+        
+        const jsonBody = JSON.stringify(data);
+        console.log('📦 JSON body:', jsonBody);
+        console.log('📦 JSON length:', jsonBody.length);
+        
         // Send to Google Sheets
         console.log('📤 Sending to Google Sheets...');
         const response = await fetch('https://script.google.com/macros/s/AKfycbxmuReDxhNFGjFC_LaEcCiTB8R7uI9lJxMbMsEWSoIp_VRegLarMnnILlvk-2K7ghDYeg/exec', {
@@ -529,6 +531,7 @@ export async function handleTempReportSubmit() {
         
     } catch (error) {
         console.error('❌ Error submitting to Google Sheets:', error);
+        resetSubmitButton();
         // Still show success to user since data is saved locally
         // The webhook will retry or admin can check logs
         const updatedStats = updateUserStats();
