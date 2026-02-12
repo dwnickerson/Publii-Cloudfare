@@ -1,5 +1,5 @@
-// Modal Handlers with Gamification - VERSION 3.3.9 COMPLETE
-console.log('📦 modals.js VERSION 3.3.9 loaded - WATER CLARITY ADDED');
+// Modal Handlers with Gamification - VERSION 3.3.10 GEOCODING FIX
+console.log('📦 modals.js VERSION 3.3.10 loaded - GEOCODING VALIDATION + RETRY');
 
 import { storage } from '../services/storage.js';
 
@@ -176,9 +176,30 @@ export function openTempReportModal() {
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
                 const data = await response.json();
-                const location = data.address.city || data.address.town || data.address.village || data.display_name;
+                
+                // Build "City, State" format
+                const city = data.address.city || data.address.town || data.address.village || data.address.county;
+                const state = data.address.state;
+                
+                let location;
+                if (city && state) {
+                    // Perfect: "Memphis, TN"
+                    location = `${city}, ${state}`;
+                } else if (city) {
+                    // Just city: "Memphis"
+                    location = city;
+                } else if (state) {
+                    // Just state (rare): "Tennessee"
+                    location = state;
+                } else {
+                    // Fallback to coordinates
+                    location = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+                }
+                
                 document.getElementById('tempReportLocation').value = location;
+                console.log('📍 Geolocated to:', location);
             } catch (error) {
+                console.error('Reverse geocoding error:', error);
                 document.getElementById('tempReportLocation').value = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
             }
             
@@ -221,6 +242,18 @@ export async function handleTempReportSubmit() {
     
     console.log('Form data:', { waterbodyName, location, waterBody, temperature, depth, clarity, notes });
     
+    // Validate location format
+    if (!location || location.trim().length < 3) {
+        showNotification('❌ Please enter a valid location (City, State)', 'error');
+        return;
+    }
+    
+    // Check for comma (suggests "City, State" format)
+    if (!location.includes(',') && !location.includes(' ')) {
+        showNotification('⚠️ Location should be in "City, State" format (e.g., "Memphis, TN")', 'error');
+        return;
+    }
+    
     if (isNaN(depth) || depth < 0) {
         console.warn('Invalid depth:', depth);
         showNotification('❌ Please enter a valid depth (0 or greater)', 'error');
@@ -230,20 +263,50 @@ export async function handleTempReportSubmit() {
     // Geocode the location to get lat/long
     console.log('🗺️ Geocoding location:', location);
     let lat = null, lon = null;
-    try {
-        const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`;
-        const geocodeResponse = await fetch(geocodeUrl);
-        const geocodeData = await geocodeResponse.json();
-        
-        if (geocodeData && geocodeData.length > 0) {
-            lat = parseFloat(geocodeData[0].lat);
-            lon = parseFloat(geocodeData[0].lon);
-            console.log('✅ Geocoded:', { lat, lon });
-        } else {
-            console.warn('⚠️ Could not geocode location');
+    
+    // Try geocoding with retry logic
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            console.log(`Geocoding attempt ${attempt}...`);
+            const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`;
+            const geocodeResponse = await fetch(geocodeUrl);
+            
+            if (!geocodeResponse.ok) {
+                throw new Error(`Geocoding API error: ${geocodeResponse.status}`);
+            }
+            
+            const geocodeData = await geocodeResponse.json();
+            
+            if (geocodeData && geocodeData.length > 0) {
+                lat = parseFloat(geocodeData[0].lat);
+                lon = parseFloat(geocodeData[0].lon);
+                console.log('✅ Geocoded:', { lat, lon });
+                break; // Success! Exit retry loop
+            } else {
+                console.warn(`⚠️ No results for location: "${location}"`);
+                if (attempt === 2) {
+                    // Last attempt failed
+                    showNotification('❌ Could not find location. Please enter "City, State" format (e.g., "Memphis, TN")', 'error');
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error(`❌ Geocoding error (attempt ${attempt}):`, error);
+            if (attempt === 2) {
+                // Last attempt failed
+                showNotification('❌ Geocoding failed. Please check your internet connection and try again.', 'error');
+                return;
+            }
+            // Wait 1 second before retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
-    } catch (error) {
-        console.error('❌ Geocoding error:', error);
+    }
+    
+    // Final check - don't submit without coordinates
+    if (lat === null || lon === null) {
+        console.error('🚫 Geocoding failed completely. Not submitting.');
+        showNotification('❌ Cannot submit without location coordinates. Please try again.', 'error');
+        return;
     }
     
     // NEW ORDER: A, B, C, D, E, F, G, H, I, J, K
@@ -266,7 +329,7 @@ export async function handleTempReportSubmit() {
     try {
         // Send to Google Sheets
         console.log('📤 Sending to Google Sheets...');
-        const response = await fetch('https://script.google.com/macros/s/AKfycbxmuReDxhNFGjFC_LaEcCiTB8R7uI9lJxMbMsEWSoIp_VRegLarMnnILlvk-2K7ghDYeg/exec', {
+        const response = await fetch('https://script.google.com/macros/s/AKfycbySp_91L4EPOFXFx2528Q7TPfRtQi9dBiR4l2CSWpnrJ_x2UdZGamdiqsS7bYOQ38R8bg/exec', {
             method: 'POST',
             mode: 'no-cors', // Google Apps Script requires this
             headers: {
