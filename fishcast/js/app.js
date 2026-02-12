@@ -1,6 +1,5 @@
 // FishCast Main Application
 // Entry point and coordinator for all modules
-
 // Debug logging for module loading
 console.log('🚀 Starting FishCast V2.0...');
 console.log('📍 Current URL:', window.location.href);
@@ -35,22 +34,25 @@ import { cToF } from './utils/math.js';
 // Initialize application
 function init() {
     console.log('🎣 FishCast V2.0 Initializing...');
-    
+   
     // Initialize theme
     initTheme();
-    
+   
     // Render favorites
     renderFavorites();
-    
+   
     // Load default settings
     loadDefaults();
-    
+   
     // Setup event listeners
     setupEventListeners();
-    
+   
+    // Initialize species memory feature
+    initSpeciesMemory();
+   
     // Register service worker
     registerServiceWorker();
-    
+   
     console.log('✅ FishCast V2.0 Ready!');
 }
 
@@ -58,7 +60,7 @@ function init() {
 function initTheme() {
     const theme = storage.getTheme();
     document.documentElement.setAttribute('data-theme', theme);
-    
+   
     const themeToggle = document.getElementById('themeToggle');
     if (themeToggle) {
         themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
@@ -68,10 +70,10 @@ function initTheme() {
 function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
-    
+   
     document.documentElement.setAttribute('data-theme', next);
     storage.setTheme(next);
-    
+   
     const themeToggle = document.getElementById('themeToggle');
     if (themeToggle) {
         themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
@@ -83,7 +85,7 @@ function loadDefaults() {
     const defaultLocation = storage.getDefaultLocation();
     const defaultSpecies = storage.getDefaultSpecies();
     const defaultWaterBody = storage.getDefaultWaterBody();
-    
+   
     if (defaultLocation) {
         document.getElementById('location').value = defaultLocation;
     }
@@ -95,28 +97,55 @@ function loadDefaults() {
     }
 }
 
+// Initialize species memory feature
+function initSpeciesMemory() {
+    const speciesSelect = document.getElementById('species');
+    
+    // Remember last selected species
+    const lastSpecies = localStorage.getItem('lastSelectedSpecies');
+    if (lastSpecies && speciesSelect) {
+        // Check if the species still exists in the dropdown
+        const option = speciesSelect.querySelector(`option[value="${lastSpecies}"]`);
+        if (option) {
+            speciesSelect.value = lastSpecies;
+            console.log(`🐟 Restored last species: ${lastSpecies}`);
+        }
+    }
+    
+    // Save species when changed
+    if (speciesSelect) {
+        speciesSelect.addEventListener('change', (e) => {
+            const selectedSpecies = e.target.value;
+            if (selectedSpecies) {
+                localStorage.setItem('lastSelectedSpecies', selectedSpecies);
+                console.log(`🐟 Saved species preference: ${selectedSpecies}`);
+            }
+        });
+    }
+}
+
 // Main forecast generation
 async function generateForecast(event) {
     event.preventDefault();
-    
+   
     const location = document.getElementById('location').value;
     const speciesKey = document.getElementById('species').value;
     const waterType = document.getElementById('waterType').value;
     const days = parseInt(document.getElementById('days').value);
-    
+   
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Generating...';
-    
+   
     showLoading();
-    
+   
     try {
         // Get location coordinates
         const coords = await getLocation(location);
-        
+       
         // Fetch weather data
         const weather = await getWeather(coords.lat, coords.lon, days);
-        
+       
         // Convert historical temps to Fahrenheit
         const historical_F = {
             daily: {
@@ -125,7 +154,7 @@ async function generateForecast(event) {
                 wind_speed_10m_max: weather.historical.daily.wind_speed_10m_max
             }
         };
-        
+       
         // Estimate water temperature
         const waterTemp = await estimateWaterTemp(
             coords,
@@ -133,7 +162,7 @@ async function generateForecast(event) {
             new Date(),
             historical_F
         );
-        
+       
         // Render the forecast
         renderForecast({
             coords,
@@ -143,7 +172,7 @@ async function generateForecast(event) {
             waterType,
             days
         });
-        
+       
     } catch (error) {
         console.error('Error generating forecast:', error);
         showError(error.message);
@@ -158,37 +187,37 @@ async function useCurrentLocation() {
     const btn = document.getElementById('geolocateBtn');
     btn.textContent = '⏳';
     btn.disabled = true;
-    
+   
     if (!navigator.geolocation) {
         showNotification('Geolocation not supported by your browser', 'error');
         btn.textContent = '📍';
         btn.disabled = false;
         return;
     }
-    
+   
     navigator.geolocation.getCurrentPosition(
         async (position) => {
             try {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
-                
+               
                 // Reverse geocode to get city name
                 const response = await fetch(
                     `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
                     { headers: { 'User-Agent': 'FishCast/2.0' } }
                 );
                 const data = await response.json();
-                
+               
                 const city = data.address.city || data.address.town || data.address.village;
                 const state = data.address.state;
-                
+               
                 if (city && state) {
                     document.getElementById('location').value = `${city}, ${state}`;
                     showNotification('Location detected!', 'success');
                 } else {
                     document.getElementById('location').value = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
                 }
-                
+               
             } catch (error) {
                 showNotification('Could not determine location name', 'error');
             } finally {
@@ -208,25 +237,25 @@ async function useCurrentLocation() {
 function setupEventListeners() {
     // Forecast form
     document.getElementById('forecastForm')?.addEventListener('submit', generateForecast);
-    
+   
     // Geolocation
     document.getElementById('geolocateBtn')?.addEventListener('click', useCurrentLocation);
-    
+   
     // Theme toggle
     document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
     document.getElementById('waterTempBtn')?.addEventListener('click', openTempReport);
-    
+   
     // Note: tempReportForm listener is in modals.js (form is created dynamically)
-    
+   
     // Catch log form
     document.getElementById('catchLogForm')?.addEventListener('submit', submitCatchLog);
-    
+   
     // Settings links
     document.getElementById('settingsLink')?.addEventListener('click', (e) => {
         e.preventDefault();
         openSettings();
     });
-    
+   
     document.getElementById('aboutLink')?.addEventListener('click', (e) => {
         e.preventDefault();
         openAbout();
@@ -237,9 +266,9 @@ function setupEventListeners() {
 function registerServiceWorker() {
     console.log('⚠️ Service Worker disabled for development');
     // if ('serviceWorker' in navigator) {
-    //     navigator.serviceWorker.register('/fishcast/sw.js')
-    //         .then(reg => console.log('✅ Service Worker registered'))
-    //         .catch(err => console.log('❌ Service Worker registration failed:', err));
+    // navigator.serviceWorker.register('/fishcast/sw.js')
+    // .then(reg => console.log('✅ Service Worker registered'))
+    // .catch(err => console.log('❌ Service Worker registration failed:', err));
     // }
 }
 
