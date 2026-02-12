@@ -1,5 +1,5 @@
-// Modal Handlers with Gamification - VERSION 3.3.14 DATE/TIME FIX
-console.log('📦 modals.js VERSION 3.3.14 loaded - MEASUREMENT DATE/TIME CAPTURE');
+// Modal Handlers with Gamification - VERSION 3.4.1 DOUBLE-SUBMIT FIX
+console.log('📦 modals.js VERSION 3.4.1 loaded - DOUBLE-SUBMIT FIX + Favorites + DateTime + Comprehensive About');
 
 import { storage } from '../services/storage.js';
 
@@ -83,7 +83,10 @@ export function openTempReportModal() {
                 <form id="tempReportForm" action="" onsubmit="event.preventDefault(); return false;">
                     <div class="form-group">
                         <label for="tempReportWaterbody">Water Body Name</label>
-                        <input type="text" id="tempReportWaterbody" placeholder="e.g., Pickwick Lake, Smith Pond" required>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="tempReportWaterbody" placeholder="e.g., Pickwick Lake, Smith Pond" required style="flex: 1;">
+                            <button type="button" id="saveFavoriteBtn" style="width: 40px; min-width: 40px; font-size: 1.2rem;" title="Save as favorite">⭐</button>
+                        </div>
                         <small>Name of the specific lake, pond, or river</small>
                     </div>
                     
@@ -179,6 +182,56 @@ export function openTempReportModal() {
     
     console.log(`🕐 Default measurement time set to: ${dateInput.value} ${timeInput.value}`);
     
+    // Load favorite water body if saved
+    const favoriteWaterBody = localStorage.getItem('favoriteWaterBody');
+    const favoriteLocation = localStorage.getItem('favoriteLocation');
+    const favoriteType = localStorage.getItem('favoriteWaterType');
+    
+    if (favoriteWaterBody && favoriteLocation) {
+        document.getElementById('tempReportWaterbody').value = favoriteWaterBody;
+        document.getElementById('tempReportLocation').value = favoriteLocation;
+        if (favoriteType) {
+            document.getElementById('tempReportWaterBody').value = favoriteType;
+        }
+        console.log(`⭐ Loaded favorite: ${favoriteWaterBody} at ${favoriteLocation}`);
+        
+        // Change star to filled
+        document.getElementById('saveFavoriteBtn').textContent = '⭐';
+        document.getElementById('saveFavoriteBtn').title = 'Favorite saved! Click to update';
+    }
+    
+    // Save favorite handler
+    document.getElementById('saveFavoriteBtn').addEventListener('click', () => {
+        const waterbody = document.getElementById('tempReportWaterbody').value;
+        const location = document.getElementById('tempReportLocation').value;
+        const waterType = document.getElementById('tempReportWaterBody').value;
+        
+        if (!waterbody || !location) {
+            showNotification('⚠️ Please enter water body name and location first', 'error');
+            return;
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('favoriteWaterBody', waterbody);
+        localStorage.setItem('favoriteLocation', location);
+        if (waterType) {
+            localStorage.setItem('favoriteWaterType', waterType);
+        }
+        
+        // Visual feedback
+        const btn = document.getElementById('saveFavoriteBtn');
+        btn.textContent = '✅';
+        btn.title = 'Favorite saved!';
+        
+        setTimeout(() => {
+            btn.textContent = '⭐';
+            btn.title = 'Favorite saved! Click to update';
+        }, 2000);
+        
+        showNotification(`⭐ Saved as favorite: ${waterbody}`, 'success');
+        console.log(`⭐ Favorite saved: ${waterbody} at ${location}`);
+    });
+    
     // Check if form exists
     const form = document.getElementById('tempReportForm');
     console.log('🔵 Form element:', form);
@@ -259,12 +312,44 @@ export function openTempReportModal() {
 }
 
 // Handle temperature report submission
+let isSubmitting = false; // Prevent double-submit
+
+// Helper function to reset submit button state
+function resetSubmitButton() {
+    const submitBtn = document.querySelector('.action-btn.success');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Report';
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+    }
+    isSubmitting = false;
+}
+
 export async function handleTempReportSubmit() {
     console.log('🌡️ Water temp submission started...');
     
-    const waterbodyName = document.getElementById('tempReportWaterbody').value || '';
-    const location = document.getElementById('tempReportLocation').value || '';
-    const waterBody = document.getElementById('tempReportWaterBody').value || '';
+    // Prevent double-submit
+    if (isSubmitting) {
+        console.warn('⚠️ Submission already in progress, ignoring duplicate click');
+        return;
+    }
+    
+    // Disable submit button
+    const submitBtn = document.querySelector('.action-btn.success');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.style.opacity = '0.6';
+        submitBtn.style.cursor = 'not-allowed';
+    }
+    
+    isSubmitting = true;
+    
+    try {
+        const waterbodyName = document.getElementById('tempReportWaterbody').value || '';
+        const location = document.getElementById('tempReportLocation').value || '';
+        const waterBody = document.getElementById('tempReportWaterBody').value || '';
     const temperature = parseFloat(document.getElementById('tempReportTemp').value);
     const depth = parseFloat(document.getElementById('tempReportDepth').value);
     const clarity = document.getElementById('tempReportClarity').value || '';
@@ -276,6 +361,7 @@ export async function handleTempReportSubmit() {
     
     // Validate date/time
     if (!measurementDate || !measurementTime) {
+        resetSubmitButton();
         showNotification('❌ Please enter the date and time of your measurement', 'error');
         return;
     }
@@ -286,6 +372,7 @@ export async function handleTempReportSubmit() {
     
     // Validate not in the future (allow 5 minute grace period for clock differences)
     if (measurementDateTime.getTime() > now.getTime() + (5 * 60 * 1000)) {
+        resetSubmitButton();
         showNotification('❌ Measurement time cannot be in the future', 'error');
         return;
     }
@@ -293,6 +380,7 @@ export async function handleTempReportSubmit() {
     // Validate not too old (max 30 days in the past for data quality)
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
     if (measurementDateTime.getTime() < thirtyDaysAgo.getTime()) {
+        resetSubmitButton();
         showNotification('⚠️ Measurements older than 30 days may not be accurate. Please submit recent data.', 'error');
         return;
     }
@@ -350,6 +438,7 @@ export async function handleTempReportSubmit() {
                 console.warn(`⚠️ No results for location: "${location}"`);
                 if (attempt === 2) {
                     // Last attempt failed
+                    resetSubmitButton();
                     showNotification('❌ Could not find location. Please enter "City, State" format (e.g., "Memphis, TN")', 'error');
                     return;
                 }
@@ -358,6 +447,7 @@ export async function handleTempReportSubmit() {
             console.error(`❌ Geocoding error (attempt ${attempt}):`, error);
             if (attempt === 2) {
                 // Last attempt failed
+                resetSubmitButton();
                 showNotification('❌ Geocoding failed. Please check your internet connection and try again.', 'error');
                 return;
             }
@@ -369,6 +459,7 @@ export async function handleTempReportSubmit() {
     // Final check - don't submit without coordinates
     if (lat === null || lon === null) {
         console.error('🚫 Geocoding failed completely. Not submitting.');
+        resetSubmitButton();
         showNotification('❌ Cannot submit without location coordinates. Please try again.', 'error');
         return;
     }
