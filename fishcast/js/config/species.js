@@ -10,7 +10,7 @@ export const SPECIES_DATA = {
         family: "Sunfish (Lepomis)",
         phases: {
             inactive: { temp_range: [32, 45], score_bonus: -15 },
-            cold_water: { temp_range: [45, 55], score_bonus: 5 },
+            dormant: { temp_range: [45, 55], score_bonus: 5 },
             pre_spawn: { temp_range: [55, 67], score_bonus: 18 },
             spawn: { temp_range: [67, 80], score_bonus: 25 },      // Peak 70-75°F, multiple spawns
             post_spawn: { temp_range: [80, 88], score_bonus: 12 },
@@ -38,7 +38,7 @@ export const SPECIES_DATA = {
         family: "Sunfish (Lepomis)",
         phases: {
             inactive: { temp_range: [32, 45], score_bonus: -15 },
-            cold_water: { temp_range: [45, 55], score_bonus: 5 },
+            dormant: { temp_range: [45, 55], score_bonus: 5 },
             pre_spawn: { temp_range: [55, 67], score_bonus: 20 },  // More aggressive
             spawn: { temp_range: [67, 80], score_bonus: 28 },      // Spawns 5-7 days earlier
             post_spawn: { temp_range: [80, 88], score_bonus: 15 },
@@ -68,7 +68,7 @@ export const SPECIES_DATA = {
         family: "Sunfish (Lepomis)",
         phases: {
             inactive: { temp_range: [35, 48], score_bonus: -10 },  // More cold-tolerant
-            cold_water: { temp_range: [48, 58], score_bonus: 8 },
+            dormant: { temp_range: [48, 58], score_bonus: 8 },
             pre_spawn: { temp_range: [58, 68], score_bonus: 20 },
             spawn: { temp_range: [68, 78], score_bonus: 30 },      // Peak 70-74°F, SINGLE spawn
             post_spawn: { temp_range: [78, 88], score_bonus: 15 },
@@ -99,7 +99,7 @@ export const SPECIES_DATA = {
         family: "Sunfish (Lepomis)",
         phases: {
             inactive: { temp_range: [35, 48], score_bonus: -8 },   // Very hardy
-            cold_water: { temp_range: [48, 58], score_bonus: 10 },
+            dormant: { temp_range: [48, 58], score_bonus: 10 },
             pre_spawn: { temp_range: [58, 68], score_bonus: 18 },
             spawn: { temp_range: [68, 82], score_bonus: 22 },      // Wide range, multiple spawns
             post_spawn: { temp_range: [82, 90], score_bonus: 15 }, // Most heat-tolerant
@@ -129,7 +129,7 @@ export const SPECIES_DATA = {
         family: "Sunfish (Lepomis)",
         phases: {
             inactive: { temp_range: [38, 50], score_bonus: -10 },
-            cold_water: { temp_range: [50, 60], score_bonus: 8 },
+            dormant: { temp_range: [50, 60], score_bonus: 8 },
             pre_spawn: { temp_range: [60, 68], score_bonus: 20 },
             spawn: { temp_range: [68, 78], score_bonus: 28 },      // Peak 70-75°F
             post_spawn: { temp_range: [78, 88], score_bonus: 15 },
@@ -160,7 +160,7 @@ export const SPECIES_DATA = {
         family: "Sunfish (Lepomis)",
         phases: {
             inactive: { temp_range: [35, 48], score_bonus: -12 },
-            cold_water: { temp_range: [48, 58], score_bonus: 8 },
+            dormant: { temp_range: [48, 58], score_bonus: 8 },
             pre_spawn: { temp_range: [58, 65], score_bonus: 20 },
             spawn: { temp_range: [65, 75], score_bonus: 28 },      // Peak 68-72°F
             post_spawn: { temp_range: [75, 85], score_bonus: 15 },
@@ -190,7 +190,7 @@ export const SPECIES_DATA = {
         family: "Sunfish (Ambloplites)",
         phases: {
             inactive: { temp_range: [32, 42], score_bonus: -15 },
-            cold_water: { temp_range: [42, 52], score_bonus: 5 },
+            dormant: { temp_range: [42, 52], score_bonus: 5 },
             pre_spawn: { temp_range: [52, 60], score_bonus: 20 },
             spawn: { temp_range: [60, 70], score_bonus: 30 },      // Peak 63-67°F
             post_spawn: { temp_range: [70, 82], score_bonus: 15 },
@@ -253,7 +253,7 @@ export const SPECIES_DATA = {
         family: "Black Bass (Micropterus)",
         phases: {
             inactive: { temp_range: [35, 45], score_bonus: -12 },
-            cold_water: { temp_range: [45, 52], score_bonus: 5 },
+            dormant: { temp_range: [45, 52], score_bonus: 5 },
             pre_spawn: { temp_range: [52, 60], score_bonus: 22 },
             spawn: { temp_range: [60, 68], score_bonus: 32 },      // Peak 62-65°F (COOLER!)
             post_spawn: { temp_range: [68, 72], score_bonus: 10 },
@@ -286,7 +286,7 @@ export const SPECIES_DATA = {
         family: "Black Bass (Micropterus)",
         phases: {
             inactive: { temp_range: [38, 48], score_bonus: -10 },
-            cold_water: { temp_range: [48, 55], score_bonus: 8 },
+            dormant: { temp_range: [48, 55], score_bonus: 8 },
             pre_spawn: { temp_range: [55, 62], score_bonus: 20 },
             spawn: { temp_range: [62, 70], score_bonus: 30 },      // Peak 63-68°F (between LM/SM)
             post_spawn: { temp_range: [70, 75], score_bonus: 12 },
@@ -321,7 +321,7 @@ export const SPECIES_DATA = {
         family: "Crappie (Pomoxis)",
         phases: {
             inactive: { temp_range: [35, 45], score_bonus: -8 },
-            cold_water: { temp_range: [45, 52], score_bonus: 10 },
+            dormant: { temp_range: [45, 52], score_bonus: 10 },
             pre_spawn: { temp_range: [52, 58], score_bonus: 22 },
             spawn: { temp_range: [58, 68], score_bonus: 35 },
             post_spawn: { temp_range: [68, 75], score_bonus: 15 },
@@ -354,7 +354,7 @@ export const SPECIES_DATA = {
         family: "Crappie (Pomoxis)",
         phases: {
             inactive: { temp_range: [35, 45], score_bonus: -8 },
-            cold_water: { temp_range: [45, 52], score_bonus: 10 },
+            dormant: { temp_range: [45, 52], score_bonus: 10 },
             pre_spawn: { temp_range: [52, 58], score_bonus: 22 },
             spawn: { temp_range: [58, 68], score_bonus: 35 },      // Peak 60-65°F
             post_spawn: { temp_range: [68, 75], score_bonus: 15 },
@@ -387,7 +387,7 @@ export const SPECIES_DATA = {
         family: "Crappie (Pomoxis)",
         phases: {
             inactive: { temp_range: [32, 45], score_bonus: -10 },
-            cold_water: { temp_range: [45, 50], score_bonus: 8 },
+            dormant: { temp_range: [45, 50], score_bonus: 8 },
             pre_spawn: { temp_range: [50, 55], score_bonus: 20 },
             spawn: { temp_range: [55, 65], score_bonus: 38 },      // Peak 58-62°F (COOLER!)
             post_spawn: { temp_range: [65, 72], score_bonus: 15 },
