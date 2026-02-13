@@ -7,12 +7,20 @@ import { calculateFishingScore, getTechniqueTips, getPressureTrend } from '../mo
 import { calculateSolunar } from '../models/solunar.js';
 import { estimateTempByDepth } from '../models/waterTemp.js';
 import { WATER_BODIES_V2 } from '../config/waterBodies.js';
+
+// ============================================
+// HELPER: Get species data
+// ============================================
+function getSpeciesData(species) {
+    return SPECIES_DATA[species] || SPECIES_DATA['bluegill']; // Default to bluegill
+}
+
 // ============================================
 // FEATURE 4: BEST TIME TO FISH SUMMARY
 // ============================================
 
-// Solunar calculations for feeding periods
-function calculateSolunar(lat, lon, date) {
+// Solunar calculations for feeding periods (LOCAL VERSION for Feature 4)
+function calculateSolunarLocal(lat, lon, date) {
     // Simplified solunar - based on moon position
     const d = new Date(date);
     const hour = d.getHours();
@@ -127,7 +135,7 @@ function calculateHourlyScore(params) {
 }
 
 // Get pressure trend
-function getPressureTrend(hourlyData, currentIndex) {
+function getPressureTrendLocal(hourlyData, currentIndex) {
     if (currentIndex < 3) return 'stable';
     
     const current = hourlyData[currentIndex].surface_pressure;
@@ -163,14 +171,14 @@ function calculateBestTimes(hourlyData, species, currentWaterTemp, location) {
         const estimatedWaterTemp = currentWaterTemp + (daysSinceNow * 0.5); // Rough estimate
         
         // Get solunar for this hour
-        const solunar = calculateSolunar(location.lat, location.lon, hour.time);
+        const solunar = calculateSolunarLocal(location.lat, location.lon, hour.time);
         
         // Calculate score
         const score = calculateHourlyScore({
             waterTemp: estimatedWaterTemp,
             airTemp: hour.temperature_2m,
             pressure: hour.surface_pressure,
-            pressureTrend: getPressureTrend(hourlyData, i),
+            pressureTrend: getPressureTrendLocal(hourlyData, i),
             windSpeed: hour.wind_speed_10m,
             cloudCover: hour.cloud_cover,
             precipitation: hour.precipitation,
@@ -187,7 +195,7 @@ function calculateBestTimes(hourlyData, species, currentWaterTemp, location) {
             waterTemp: estimatedWaterTemp,
             airTemp: hour.temperature_2m,
             pressure: hour.surface_pressure,
-            pressureTrend: getPressureTrend(hourlyData, i),
+            pressureTrend: getPressureTrendLocal(hourlyData, i),
             windSpeed: hour.wind_speed_10m,
             solunar: solunar
         });
