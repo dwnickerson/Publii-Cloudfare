@@ -1,7 +1,455 @@
-// Modal Handlers with Gamification - VERSION 3.4.2 HOTFIX
-console.log('📦 modals.js VERSION 3.4.2 loaded - SYNTAX FIX + Double-Submit Prevention');
+// Modal Handlers with Gamification - VERSION 3.5.0
+console.log('📦 modals.js VERSION 3.5.0 loaded - Multiple Favorites + Quick Report + Fixes');
 
 import { storage } from '../services/storage.js';
+
+// ============================================
+// FEATURE 2: MULTIPLE FAVORITES
+// ============================================
+
+// Favorites storage
+let waterBodyFavorites = [];
+
+// Load favorites from localStorage
+function loadFavorites() {
+    const stored = localStorage.getItem('waterBodyFavorites');
+    if (stored) {
+        try {
+            waterBodyFavorites = JSON.parse(stored);
+            // Sort by lastUsed (most recent first)
+            waterBodyFavorites.sort((a, b) => 
+                new Date(b.lastUsed) - new Date(a.lastUsed)
+            );
+        } catch (e) {
+            console.error('Error loading favorites:', e);
+            waterBodyFavorites = [];
+        }
+    }
+    return waterBodyFavorites;
+}
+
+// Save favorites to localStorage
+function saveFavorites() {
+    // Limit to 10 favorites
+    if (waterBodyFavorites.length > 10) {
+        waterBodyFavorites = waterBodyFavorites.slice(0, 10);
+    }
+    localStorage.setItem('waterBodyFavorites', JSON.stringify(waterBodyFavorites));
+    console.log(`💾 Saved ${waterBodyFavorites.length} favorites`);
+}
+
+// Add new favorite
+function addFavorite(name, location, waterType) {
+    // Check if already exists
+    const exists = waterBodyFavorites.find(f => 
+        f.name.toLowerCase() === name.toLowerCase() && 
+        f.location.toLowerCase() === location.toLowerCase()
+    );
+    
+    if (exists) {
+        // Update lastUsed
+        exists.lastUsed = new Date().toISOString();
+        showNotification('⭐ Favorite updated!', 'success');
+    } else {
+        // Add new
+        const favorite = {
+            id: `fav_${Date.now()}`,
+            name,
+            location,
+            waterType,
+            lastUsed: new Date().toISOString()
+        };
+        waterBodyFavorites.unshift(favorite);
+        showNotification('⭐ Added to favorites!', 'success');
+    }
+    
+    saveFavorites();
+    populateFavoriteSelector();
+}
+
+// Remove favorite
+function removeFavorite(id) {
+    waterBodyFavorites = waterBodyFavorites.filter(f => f.id !== id);
+    saveFavorites();
+    populateFavoriteSelector();
+    showNotification('🗑️ Favorite removed', 'success');
+}
+
+// Populate dropdown
+function populateFavoriteSelector() {
+    const selector = document.getElementById('favoriteSelector');
+    if (!selector) return;
+    
+    // Clear existing options
+    selector.innerHTML = '<option value="">Select a favorite or add new...</option>';
+    
+    // Add favorites
+    waterBodyFavorites.forEach(fav => {
+        const option = document.createElement('option');
+        option.value = fav.id;
+        option.textContent = `🌊 ${fav.name} (${fav.location})`;
+        selector.appendChild(option);
+    });
+    
+    // Add "Add new" option
+    const addNewOption = document.createElement('option');
+    addNewOption.value = 'ADD_NEW';
+    addNewOption.textContent = '➕ Add new location...';
+    selector.appendChild(addNewOption);
+}
+
+// Handle favorite selection
+function onFavoriteSelected(favoriteId) {
+    const manualFields = document.getElementById('manualEntryFields');
+    
+    if (favoriteId === 'ADD_NEW') {
+        // Show manual entry fields
+        if (manualFields) {
+            manualFields.style.display = 'block';
+        }
+        document.getElementById('tempReportWaterbody').value = '';
+        document.getElementById('tempReportLocation').value = '';
+        document.getElementById('tempReportWaterBody').value = 'pond';
+    } else if (favoriteId) {
+        // Load favorite data
+        const favorite = waterBodyFavorites.find(f => f.id === favoriteId);
+        if (favorite) {
+            document.getElementById('tempReportWaterbody').value = favorite.name;
+            document.getElementById('tempReportLocation').value = favorite.location;
+            document.getElementById('tempReportWaterBody').value = favorite.waterType;
+            
+            // Hide manual entry fields
+            if (manualFields) {
+                manualFields.style.display = 'none';
+            }
+            
+            // Update lastUsed
+            favorite.lastUsed = new Date().toISOString();
+            saveFavorites();
+            
+            console.log(`🌊 Loaded favorite: ${favorite.name}`);
+        }
+    } else {
+        // Nothing selected - show manual fields
+        if (manualFields) {
+            manualFields.style.display = 'block';
+        }
+    }
+}
+
+// Open manage favorites modal
+function openManageFavoritesModal() {
+    const modalHTML = `
+        <div id="manageFavoritesModal" class="modal" style="display: flex;">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>⭐ Manage Favorites</h2>
+                    <button class="close-btn" onclick="closeManageFavorites()">×</button>
+                </div>
+                
+                <div class="modal-body">
+                    <p style="color: #666; margin-bottom: 20px;">
+                        Save up to 10 water bodies for quick reporting
+                    </p>
+                    
+                    <div id="favoritesList">
+                        ${renderFavoritesList()}
+                    </div>
+                    
+                    ${waterBodyFavorites.length === 0 ? `
+                        <div style="text-align: center; padding: 40px 20px; color: #999;">
+                            <p>No favorites yet!</p>
+                            <p style="font-size: 14px;">Submit a water temp report to add your first favorite.</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="action-btn secondary" onclick="closeManageFavorites()">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Render favorites list
+function renderFavoritesList() {
+    if (waterBodyFavorites.length === 0) return '';
+    
+    return waterBodyFavorites.map(fav => `
+        <div class="favorite-item">
+            <div class="favorite-info">
+                <strong>🌊 ${fav.name}</strong>
+                <small>${fav.location} · ${fav.waterType.charAt(0).toUpperCase() + fav.waterType.slice(1)}</small>
+            </div>
+            <button class="delete-btn" onclick="deleteFavoriteFromModal('${fav.id}')">🗑️</button>
+        </div>
+    `).join('');
+}
+
+// Delete favorite from modal
+window.deleteFavoriteFromModal = function(id) {
+    removeFavorite(id);
+    // Refresh the list
+    const list = document.getElementById('favoritesList');
+    if (list) {
+        list.innerHTML = renderFavoritesList();
+        
+        // If no favorites left, show empty message
+        if (waterBodyFavorites.length === 0) {
+            list.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: #999;">
+                    <p>No favorites yet!</p>
+                    <p style="font-size: 14px;">Submit a water temp report to add your first favorite.</p>
+                </div>
+            `;
+        }
+    }
+};
+
+// Close manage favorites modal
+window.closeManageFavorites = function() {
+    const modal = document.getElementById('manageFavoritesModal');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+// ============================================
+// FEATURE 3: QUICK REPORT
+// ============================================
+
+// Track recent reports in localStorage
+function trackRecentReport(reportData) {
+    let recentReports = JSON.parse(localStorage.getItem('recentReports') || '[]');
+    
+    // Add new report
+    recentReports.unshift({
+        timestamp: reportData.timestamp || new Date().toISOString(),
+        waterbodyName: reportData.waterbodyName,
+        location: reportData.location,
+        waterBody: reportData.waterBody
+    });
+    
+    // Keep only last 10
+    recentReports = recentReports.slice(0, 10);
+    
+    localStorage.setItem('recentReports', JSON.stringify(recentReports));
+}
+
+// Get recent reports
+function getRecentReports() {
+    return JSON.parse(localStorage.getItem('recentReports') || '[]');
+}
+
+// Get locations for quick report (favorites + recent)
+function getQuickReportLocations() {
+    let locations = [];
+    
+    // Add favorites (already sorted by lastUsed)
+    const favorites = loadFavorites();
+    locations.push(...favorites.map(fav => ({
+        id: fav.id,
+        name: fav.name,
+        location: fav.location,
+        waterType: fav.waterType,
+        source: 'favorite'
+    })));
+    
+    // Add recent reports (not already in favorites)
+    const recentReports = getRecentReports();
+    recentReports.forEach(report => {
+        const exists = locations.find(loc => 
+            loc.name === report.waterbodyName && 
+            loc.location === report.location
+        );
+        if (!exists) {
+            locations.push({
+                id: `recent_${report.timestamp}`,
+                name: report.waterbodyName,
+                location: report.location,
+                waterType: report.waterBody,
+                source: 'recent'
+            });
+        }
+    });
+    
+    // Limit to 10
+    return locations.slice(0, 10);
+}
+
+// Open Quick Report Modal
+export function openQuickReportModal() {
+    console.log('⚡ Opening Quick Report modal...');
+    
+    // Get available locations
+    const locations = getQuickReportLocations();
+    
+    if (locations.length === 0) {
+        // No saved locations - redirect to full form
+        showNotification('ℹ️ No saved locations. Use full form for first report.', 'info');
+        setTimeout(() => {
+            openTempReportModal();
+        }, 1000);
+        return;
+    }
+    
+    // Create modal HTML
+    const modalHTML = `
+        <div id="quickReportModal" class="modal" style="display: flex;">
+            <div class="modal-content quick-report">
+                <div class="modal-header">
+                    <h2>⚡ Quick Report</h2>
+                    <button class="close-btn" onclick="closeQuickReport()">×</button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- Location Selector -->
+                    <div class="form-group">
+                        <label>Reporting from:</label>
+                        <select id="quickReportLocation">
+                            ${renderQuickReportLocations(locations)}
+                        </select>
+                        <small class="helper-text" id="locationHelper"></small>
+                    </div>
+                    
+                    <!-- Temperature (Main Input) -->
+                    <div class="form-group highlight">
+                        <label for="quickReportTemp">Water Temperature</label>
+                        <div class="temp-input">
+                            <input type="number" id="quickReportTemp" 
+                                   placeholder="65" 
+                                   step="0.1" 
+                                   autofocus 
+                                   style="font-size: 32px; text-align: center; max-width: 150px;">
+                            <span class="unit">°F</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Optional: Depth -->
+                    <div class="form-group optional">
+                        <label>Depth (optional)</label>
+                        <select id="quickReportDepth">
+                            <option value="0">Surface (0 ft)</option>
+                            <option value="5">Shallow (5 ft)</option>
+                            <option value="10">Medium (10 ft)</option>
+                            <option value="15">Deep (15 ft)</option>
+                            <option value="20">Very Deep (20+ ft)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Optional: Clarity -->
+                    <div class="form-group optional">
+                        <label>Water Clarity (optional)</label>
+                        <select id="quickReportClarity">
+                            <option value="clear">Clear</option>
+                            <option value="slightly_stained">Slightly Stained</option>
+                            <option value="stained">Stained</option>
+                            <option value="muddy">Muddy</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Auto-filled Info -->
+                    <div class="auto-info">
+                        ✓ Date/Time: Now (${new Date().toLocaleString()})
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="action-btn secondary" onclick="closeQuickReport()">Cancel</button>
+                    <button class="action-btn success" onclick="submitQuickReport()">
+                        ⚡ Submit Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Update helper text
+    updateQuickReportHelper();
+    
+    // Attach location selector listener
+    document.getElementById('quickReportLocation').addEventListener('change', updateQuickReportHelper);
+    
+    // Focus on temperature input
+    setTimeout(() => {
+        document.getElementById('quickReportTemp').focus();
+    }, 100);
+}
+
+// Render locations dropdown
+function renderQuickReportLocations(locations) {
+    return locations.map(loc => `
+        <option value="${loc.id}" 
+                data-name="${loc.name}" 
+                data-location="${loc.location}" 
+                data-watertype="${loc.waterType}">
+            ${loc.name} (${loc.location})
+        </option>
+    `).join('');
+}
+
+// Update helper text
+function updateQuickReportHelper() {
+    const selector = document.getElementById('quickReportLocation');
+    const selected = selector.options[selector.selectedIndex];
+    const helper = document.getElementById('locationHelper');
+    
+    if (selected && helper) {
+        helper.textContent = `🌊 ${selected.dataset.name}, ${selected.dataset.location} · ${selected.dataset.watertype}`;
+    }
+}
+
+// Submit quick report
+window.submitQuickReport = async function() {
+    const locationSelector = document.getElementById('quickReportLocation');
+    const selected = locationSelector.options[locationSelector.selectedIndex];
+    
+    const temperature = parseFloat(document.getElementById('quickReportTemp').value);
+    const depth = parseFloat(document.getElementById('quickReportDepth').value);
+    const clarity = document.getElementById('quickReportClarity').value;
+    
+    // Validate temperature
+    if (!temperature || isNaN(temperature)) {
+        showNotification('❌ Please enter water temperature', 'error');
+        return;
+    }
+    
+    // Close quick report modal
+    closeQuickReport();
+    
+    // Open temp report modal with pre-filled data
+    openTempReportModal();
+    
+    // Wait for modal to be ready
+    setTimeout(() => {
+        // Fill in the form
+        document.getElementById('tempReportWaterbody').value = selected.dataset.name;
+        document.getElementById('tempReportLocation').value = selected.dataset.location;
+        document.getElementById('tempReportWaterBody').value = selected.dataset.watertype;
+        document.getElementById('tempReportTemp').value = temperature;
+        document.getElementById('tempReportDepth').value = depth || 0;
+        document.getElementById('tempReportClarity').value = clarity;
+        
+        // Auto-submit
+        window.handleWaterTempSubmit();
+    }, 300);
+};
+
+// Close quick report modal
+window.closeQuickReport = function() {
+    const modal = document.getElementById('quickReportModal');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+console.log('✅ Multiple Favorites & Quick Report features loaded');
+
 
 // Get user's report statistics
 function getUserStats() {
@@ -81,33 +529,50 @@ export function openTempReportModal() {
                 </div>
                 
                 <form id="tempReportForm" action="" onsubmit="event.preventDefault(); return false;">
+                    <!-- FAVORITES SELECTOR -->
                     <div class="form-group">
-                        <label for="tempReportWaterbody">Water Body Name</label>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="text" id="tempReportWaterbody" placeholder="e.g., Pickwick Lake, Smith Pond" required style="flex: 1;">
-                            <button type="button" id="saveFavoriteBtn" style="width: 40px; min-width: 40px; font-size: 1.2rem;" title="Save as favorite">⭐</button>
-                        </div>
-                        <small>Name of the specific lake, pond, or river</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="tempReportLocation">Location (City, State)</label>
+                        <label for="favoriteSelector">Water Body</label>
                         <div style="display: flex; gap: 10px;">
-                            <input type="text" id="tempReportLocation" placeholder="e.g., Counce, TN" required>
-                            <button type="button" id="tempReportGeoBtn" style="width: 56px; min-width: 56px;" title="Use my location">📍</button>
+                            <select id="favoriteSelector" style="flex: 1;">
+                                <option value="">Select a favorite or add new...</option>
+                            </select>
+                            <button type="button" id="manageFavoritesBtn" class="icon-btn" title="Manage favorites">
+                                ⚙️
+                            </button>
                         </div>
-                        <small>City and state where the water body is located</small>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="tempReportWaterBody">Water Body Type</label>
-                        <select id="tempReportWaterBody" required>
-                            <option value="">Select type</option>
-                            <option value="pond">Pond (< 20 acres)</option>
-                            <option value="lake">Lake (> 20 acres)</option>
-                            <option value="river">River/Stream</option>
-                            <option value="reservoir">Reservoir</option>
-                        </select>
+
+                    <!-- MANUAL ENTRY FIELDS (shown when "Add new" selected) -->
+                    <div id="manualEntryFields" style="display: block;">
+                        <div class="form-group">
+                            <label for="tempReportWaterbody">Water Body Name</label>
+                            <input type="text" id="tempReportWaterbody" placeholder="e.g., Pickwick Lake" required>
+                            <small>Name of the specific lake, pond, or river</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="tempReportLocation">Location (City, State)</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="tempReportLocation" placeholder="e.g., Counce, TN" required style="flex: 1;">
+                                <button type="button" id="tempReportGeoBtn" style="width: 56px; height: 42px; padding: 8px;">📍</button>
+                            </div>
+                            <small>City and state where the water body is located</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="tempReportWaterBody">Water Body Type</label>
+                            <select id="tempReportWaterBody" required>
+                                <option value="">Select type</option>
+                                <option value="pond">Pond (< 20 acres)</option>
+                                <option value="lake">Lake (> 20 acres)</option>
+                                <option value="river">River/Stream</option>
+                                <option value="reservoir">Reservoir</option>
+                            </select>
+                        </div>
+                        
+                        <button type="button" id="saveAsFavoriteBtn" class="action-btn secondary" style="width: 100%; margin-top: 10px;">
+                            ⭐ Save as Favorite
+                        </button>
                     </div>
                     
                     <div class="form-group">
@@ -182,55 +647,41 @@ export function openTempReportModal() {
     
     console.log(`🕐 Default measurement time set to: ${dateInput.value} ${timeInput.value}`);
     
-    // Load favorite water body if saved
-    const favoriteWaterBody = localStorage.getItem('favoriteWaterBody');
-    const favoriteLocation = localStorage.getItem('favoriteLocation');
-    const favoriteType = localStorage.getItem('favoriteWaterType');
-    
-    if (favoriteWaterBody && favoriteLocation) {
-        document.getElementById('tempReportWaterbody').value = favoriteWaterBody;
-        document.getElementById('tempReportLocation').value = favoriteLocation;
-        if (favoriteType) {
-            document.getElementById('tempReportWaterBody').value = favoriteType;
-        }
-        console.log(`⭐ Loaded favorite: ${favoriteWaterBody} at ${favoriteLocation}`);
-        
-        // Change star to filled
-        document.getElementById('saveFavoriteBtn').textContent = '⭐';
-        document.getElementById('saveFavoriteBtn').title = 'Favorite saved! Click to update';
+    // Initialize favorites
+    loadFavorites();
+    populateFavoriteSelector();
+
+    // Attach favorite selector listener
+    const favoriteSelector = document.getElementById('favoriteSelector');
+    if (favoriteSelector) {
+        favoriteSelector.addEventListener('change', (e) => {
+            onFavoriteSelected(e.target.value);
+        });
     }
-    
-    // Save favorite handler
-    document.getElementById('saveFavoriteBtn').addEventListener('click', () => {
-        const waterbody = document.getElementById('tempReportWaterbody').value;
-        const location = document.getElementById('tempReportLocation').value;
-        const waterType = document.getElementById('tempReportWaterBody').value;
-        
-        if (!waterbody || !location) {
-            showNotification('⚠️ Please enter water body name and location first', 'error');
-            return;
-        }
-        
-        // Save to localStorage
-        localStorage.setItem('favoriteWaterBody', waterbody);
-        localStorage.setItem('favoriteLocation', location);
-        if (waterType) {
-            localStorage.setItem('favoriteWaterType', waterType);
-        }
-        
-        // Visual feedback
-        const btn = document.getElementById('saveFavoriteBtn');
-        btn.textContent = '✅';
-        btn.title = 'Favorite saved!';
-        
-        setTimeout(() => {
-            btn.textContent = '⭐';
-            btn.title = 'Favorite saved! Click to update';
-        }, 2000);
-        
-        showNotification(`⭐ Saved as favorite: ${waterbody}`, 'success');
-        console.log(`⭐ Favorite saved: ${waterbody} at ${location}`);
-    });
+
+    // Attach manage favorites button
+    const manageFavoritesBtn = document.getElementById('manageFavoritesBtn');
+    if (manageFavoritesBtn) {
+        manageFavoritesBtn.addEventListener('click', () => {
+            openManageFavoritesModal();
+        });
+    }
+
+    // Attach save as favorite button
+    const saveAsFavoriteBtn = document.getElementById('saveAsFavoriteBtn');
+    if (saveAsFavoriteBtn) {
+        saveAsFavoriteBtn.addEventListener('click', () => {
+            const name = document.getElementById('tempReportWaterbody').value;
+            const location = document.getElementById('tempReportLocation').value;
+            const waterType = document.getElementById('tempReportWaterBody').value;
+            
+            if (name && location && waterType) {
+                addFavorite(name, location, waterType);
+            } else {
+                showNotification('⚠️ Please fill in all fields first', 'error');
+            }
+        });
+    }
     
     // Check if form exists
     const form = document.getElementById('tempReportForm');
@@ -505,6 +956,24 @@ export async function handleTempReportSubmit() {
         const updatedStats = updateUserStats();
         console.log('Updated stats:', updatedStats);
         
+        // Track for quick report recent locations
+        trackRecentReport({
+            timestamp: measurementDateTime.toISOString(),
+            waterbodyName,
+            location,
+            waterBody
+        });
+        
+        // Auto-save as favorite if not already saved
+        const isFavorite = waterBodyFavorites.find(f => 
+            f.name.toLowerCase() === waterbodyName.toLowerCase() && 
+            f.location.toLowerCase() === location.toLowerCase()
+        );
+        
+        if (!isFavorite && waterBodyFavorites.length < 10) {
+            addFavorite(waterbodyName, location, waterBody);
+        }
+        
         const impactMsg = updatedStats.totalReports === 1 
             ? 'Thank you for your first report! You\'re helping build the community database.' 
             : `Your ${updatedStats.totalReports} reports have helped ${updatedStats.helpedAnglers} anglers!`;
@@ -549,6 +1018,10 @@ export async function handleTempReportSubmit() {
 
 export function closeTempReportModal() {
     console.log('🔵 closeTempReportModal called');
+    
+    // CRITICAL: Reset submission flag when modal closes
+    isSubmitting = false;
+    
     const modal = document.getElementById('tempReportModal');
     console.log('🔵 Modal element found:', modal);
     if (modal) {
