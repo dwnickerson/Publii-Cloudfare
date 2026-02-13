@@ -982,32 +982,24 @@ export async function handleTempReportSubmit() {
         console.log('Showing notification...');
         showNotification(`✅ Report submitted! ${impactMsg}`, 'success');
         
-        // Check if mobile (skip animation on mobile to avoid timeout issues)
-        const isMobile = window.innerWidth <= 768;
+        // FIX: Reset button state (was missing!)
+        resetSubmitButton();
         
-        if (isMobile) {
-            // Mobile: Skip animation, close immediately (same method as desktop)
-            console.log('📱 Mobile: Immediate close');
-            setTimeout(() => {
-                window.closeTempReport();
-            }, 100); // Tiny delay for notification to show
-        } else {
-            // Desktop: Keep the working animation
-            setTimeout(() => {
-                console.log('Closing modal...');
-                const modal = document.getElementById('tempReportModal');
-                if (modal) {
-                    // Add fade-out animation
-                    modal.style.opacity = '0';
-                    modal.style.transition = 'opacity 0.3s ease';
-                    
-                    // Remove after animation completes
-                    setTimeout(() => {
-                        window.closeTempReport();
-                    }, 300);
-                }
-            }, 500);
-        }
+        // Add closing animation and close modal
+        setTimeout(() => {
+            console.log('Closing modal...');
+            const modal = document.getElementById('tempReportModal');
+            if (modal) {
+                // Add fade-out animation
+                modal.style.opacity = '0';
+                modal.style.transition = 'opacity 0.3s ease';
+                
+                // Remove after animation completes
+                setTimeout(() => {
+                    window.closeTempReport();
+                }, 300);
+            }
+        }, 500);
         
     } catch (error) {
         console.error('❌ Error submitting to Google Sheets:', error);
@@ -1021,20 +1013,9 @@ export async function handleTempReportSubmit() {
         
         showNotification(`⚠️ Report saved locally! ${impactMsg}`, 'success');
         
-        // Check if mobile
-        const isMobile = window.innerWidth <= 768;
-        
-        if (isMobile) {
-            // Mobile: Immediate close
-            setTimeout(() => {
-                window.closeTempReport();
-            }, 100);
-        } else {
-            // Desktop: Short delay
-            setTimeout(() => {
-                window.closeTempReport();
-            }, 300);
-        }
+        setTimeout(() => {
+            window.closeTempReport();
+        }, 300);
     }
 }
 
