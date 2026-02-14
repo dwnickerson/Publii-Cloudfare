@@ -759,6 +759,7 @@ function renderMultiDayForecast(weather, speciesKey, waterType, coords, initialW
         const weatherCode = dailyData.weather_code[i];
         const weatherIcon = getWeatherIcon(weatherCode);
         const daySolunar = calculateSolunar(coords.lat, coords.lon, new Date(date));
+        const moonIcon = getMoonIcon(daySolunar.moon_phase);
         
         // Get wind data for the day
         const windSpeed = dailyData.wind_speed_10m_max ? kmhToMph(dailyData.wind_speed_10m_max[i]) : 0;
@@ -800,9 +801,14 @@ function renderMultiDayForecast(weather, speciesKey, waterType, coords, initialW
                 <div class="day-precip">${getPrecipIcon(precipProb)} ${precipProb}%</div>
                 <div style="font-size: 0.85em; color: #888; margin-top: 4px;">💧 ${waterTemps[i].toFixed(1)}°F</div>
                 <div style="font-size: 0.85em; color: #888;">💨 ${windSpeed.toFixed(0)} mph ${windDir}</div>
-                <div style="font-size: 0.8em; color: #888; margin-top: 4px; line-height: 1.5;">
-                    🌟 ${daySolunar.major_periods[0]}<br>
-                    ⭐ ${daySolunar.minor_periods[0]}
+                <div style="font-size: 0.78em; color: #777; margin-top: 6px; line-height: 1.45; text-align: left; padding: 0 4px;">
+                    <div><strong>Moon:</strong> ${moonIcon} ${daySolunar.moon_phase} (${daySolunar.moon_phase_percent}%)</div>
+                    <div><strong>Major:</strong></div>
+                    <div>🌟 ${daySolunar.major_periods[0]}</div>
+                    <div>🌟 ${daySolunar.major_periods[1]}</div>
+                    <div><strong>Minor:</strong></div>
+                    <div>⭐ ${daySolunar.minor_periods[0]}</div>
+                    <div>⭐ ${daySolunar.minor_periods[1]}</div>
                 </div>
             </div>
         `;
