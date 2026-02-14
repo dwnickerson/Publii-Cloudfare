@@ -528,8 +528,14 @@ export function renderForecast(data) {
     const precipIcon = getPrecipIcon(precipProb);
     const todayHighTemp = cToF(weather.forecast.daily.temperature_2m_max[0]);
     const todayLowTemp = cToF(weather.forecast.daily.temperature_2m_min[0]);
+    const surfaceTemp = waterTemp.toFixed(1);
+    const temp2ft = estimateTempByDepth(waterTemp, waterType, 2).toFixed(1);
+    const temp4ft = estimateTempByDepth(waterTemp, waterType, 4).toFixed(1);
+    const temp10ft = estimateTempByDepth(waterTemp, waterType, 10).toFixed(1);
+    const temp20ft = estimateTempByDepth(waterTemp, waterType, 20).toFixed(1);
     const todaySummary = `${getWeatherDescription(weather.forecast.current.weather_code)} with ${precipProb}% rain chance. ` +
         `Air temperatures from ${todayLowTemp.toFixed(0)}°F to ${todayHighTemp.toFixed(0)}°F, ` +
+        `water temperatures near Surface ${surfaceTemp}°F, 2ft ${temp2ft}°F, 4ft ${temp4ft}°F, 10ft ${temp10ft}°F, and 20ft ${temp20ft}°F, ` +
         `winds around ${windSpeed.toFixed(0)} mph ${windDir}, and a ${pTrend} pressure trend.`;
     
     // NEW: Water clarity badge
@@ -573,9 +579,7 @@ export function renderForecast(data) {
                     <span class="detail-value">
                         🌡️ Surface: ${waterTemp.toFixed(1)}°F<br>
                         <small style="color: var(--text-secondary);">
-                            📏 4ft: ${estimateTempByDepth(waterTemp, waterType, 4).toFixed(1)}°F | 
-                            10ft: ${estimateTempByDepth(waterTemp, waterType, 10).toFixed(1)}°F | 
-                            20ft: ${estimateTempByDepth(waterTemp, waterType, 20).toFixed(1)}°F
+                            📏 2ft: ${temp2ft}°F | 4ft: ${temp4ft}°F | 10ft: ${temp10ft}°F | 20ft: ${temp20ft}°F
                         </small>
                     </span>
                 </div>
@@ -817,6 +821,7 @@ window.showDayDetails = function(dayIndex, date) {
     }
     
     // Estimate depth temps
+    const temp2ft = estimateTempByDepth(waterTempEstimate, data.waterType, 2);
     const temp4ft = estimateTempByDepth(waterTempEstimate, data.waterType, 4);
     const temp10ft = estimateTempByDepth(waterTempEstimate, data.waterType, 10);
     const temp20ft = estimateTempByDepth(waterTempEstimate, data.waterType, 20);
@@ -850,7 +855,7 @@ window.showDayDetails = function(dayIndex, date) {
                         <span class="detail-value">
                             💧 Surface: ${waterTempEstimate.toFixed(1)}°F<br>
                             <small style="color: var(--text-secondary);">
-                                4ft: ${temp4ft.toFixed(1)}°F | 10ft: ${temp10ft.toFixed(1)}°F | 20ft: ${temp20ft.toFixed(1)}°F
+                                2ft: ${temp2ft.toFixed(1)}°F | 4ft: ${temp4ft.toFixed(1)}°F | 10ft: ${temp10ft.toFixed(1)}°F | 20ft: ${temp20ft.toFixed(1)}°F
                             </small>
                         </span>
                     </div>
