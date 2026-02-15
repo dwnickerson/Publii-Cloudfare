@@ -54,6 +54,96 @@ function getPrecipIcon(percentage) {
     return '☀️'; // Clear (0% only)
 }
 
+
+function buildTrendLineSvg(values, {
+    width = 680,
+    height = 220,
+    stroke = '#62d0ff',
+    suffix = '',
+    decimals = 0,
+    gradientId = 'trendFill'
+} = {}) {
+    if (!values || values.length < 2) return '';
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const padX = 18;
+    const padY = 16;
+    const usableWidth = width - (padX * 2);
+    const usableHeight = height - (padY * 2);
+
+    const points = values.map((value, index) => {
+        const x = padX + (index / (values.length - 1)) * usableWidth;
+        const normalizedY = (value - min) / range;
+        const y = (height - padY) - (normalizedY * usableHeight);
+        return { x, y, value };
+    });
+
+    const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
+    const areaPath = `${path} L${(width - padX).toFixed(2)} ${(height - padY).toFixed(2)} L${padX.toFixed(2)} ${(height - padY).toFixed(2)} Z`;
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map((tick) => {
+        const tickValue = min + ((1 - tick) * range);
+        return {
+            y: padY + (tick * usableHeight),
+            label: `${tickValue.toFixed(decimals)}${suffix}`
+        };
+    });
+
+    return `
+        <svg viewBox="0 0 ${width} ${height}" class="trend-svg" role="img" aria-label="Trend chart">
+            <defs>
+                <linearGradient id="${gradientId}" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="${stroke}" stop-opacity="0.45"></stop>
+                    <stop offset="100%" stop-color="${stroke}" stop-opacity="0.08"></stop>
+                </linearGradient>
+            </defs>
+            ${yTicks.map((tick) => `<line x1="${padX}" y1="${tick.y.toFixed(2)}" x2="${(width - padX).toFixed(2)}" y2="${tick.y.toFixed(2)}" class="trend-grid-line"></line>`).join('')}
+            <path d="${areaPath}" fill="url(#${gradientId})"></path>
+            <path d="${path}" fill="none" stroke="${stroke}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"></path>
+            ${points.map((point, index) => {
+                if (index !== 0 && index !== points.length - 1 && index !== Math.floor(points.length / 2)) return '';
+                return `<g>
+                    <circle cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="5" fill="${stroke}"></circle>
+                    <text x="${point.x.toFixed(2)}" y="${(point.y - 12).toFixed(2)}" class="trend-point-label">${point.value.toFixed(decimals)}${suffix}</text>
+                </g>`;
+            }).join('')}
+        </svg>
+    `;
+}
+
+function renderTrendCharts(weather) {
+    const hourly = weather.forecast.hourly || {};
+    const hourlyTemps = (hourly.temperature_2m || []).slice(0, 24).map(cToF);
+    const hourlyPrecip = (hourly.precipitation_probability || []).slice(0, 24);
+    const hourlyTime = (hourly.time || []).slice(0, 24);
+
+    if (hourlyTemps.length < 2 || hourlyPrecip.length < 2 || hourlyTime.length < 2) {
+        return '';
+    }
+
+    const labels = [0, 6, 12, 18, 23]
+        .filter((i) => hourlyTime[i])
+        .map((i) => new Date(hourlyTime[i]).toLocaleTimeString('en-US', { hour: '2-digit' }));
+
+    return `
+        <div class="trend-charts-card">
+            <h3>📈 Hourly Trends (next 24h)</h3>
+            <div class="trend-chart-grid">
+                <div class="trend-panel">
+                    <div class="trend-title">Air Temperature</div>
+                    ${buildTrendLineSvg(hourlyTemps, { stroke: '#7ed6a5', suffix: '°', decimals: 0, gradientId: 'tempTrendFill' })}
+                </div>
+                <div class="trend-panel">
+                    <div class="trend-title">Chance of Precipitation</div>
+                    ${buildTrendLineSvg(hourlyPrecip, { stroke: '#62d0ff', suffix: '%', decimals: 0, gradientId: 'precipTrendFill' })}
+                </div>
+            </div>
+            <div class="trend-axis-labels">${labels.map((label) => `<span>${label}</span>`).join('')}</div>
+        </div>
+    `;
+}
+
 // ===== PHYSICS-BASED WATER TEMPERATURE EVOLUTION =====
 // Calculate how water temp changes day-by-day using thermal physics
 function calculateWaterTempEvolution(initialWaterTemp, forecastData, waterType, latitude) {
@@ -296,6 +386,8 @@ export function renderForecast(data) {
             </div>
         </div>
     `;
+
+    html += renderTrendCharts(weather);
     
     // Multi-day forecast if requested
     if (days > 1) {
