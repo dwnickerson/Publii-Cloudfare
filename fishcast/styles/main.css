@@ -468,6 +468,14 @@ button[type="submit"]:hover,
     margin-top: 6px;
 }
 
+.day-detail-trend-block {
+    margin-top: 12px;
+}
+
+.day-detail-trend-block .trend-chart-grid {
+    grid-template-columns: 1fr;
+}
+
 .modal {
     display: none;
     position: fixed;
