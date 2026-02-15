@@ -52,6 +52,70 @@ function normalizeGauge(min, max, value) {
     return Math.max(0, Math.min(1, (value - min) / (max - min)));
 }
 
+function mmToInches(mm) {
+    return Number(mm) / 25.4;
+}
+
+function formatInches(mm, decimals = 2) {
+    const inches = mmToInches(mm);
+    if (!Number.isFinite(inches)) return '0.00';
+    return inches.toFixed(decimals);
+}
+
+
+function buildScoreDriverText(factor, data, features = {}) {
+    const waterTemp = Number(data.waterTemp);
+    const windMph = Number(features.windAvgKmh) * 0.621371;
+    const cloudAvg = Math.round(Number(features.cloudAvg) || 0);
+    const precipProb = Math.round(Number(features.precipProbAvg) || 0);
+    const pressureRate = Number(features.pressureTrend?.rate || 0).toFixed(1);
+
+    const messages = {
+        water_temp_optimal: `Water temp (${waterTemp.toFixed(1)}°F) is in the species' optimal feeding range.`,
+        water_temp_active: `Water temp (${waterTemp.toFixed(1)}°F) is fishable, but not in the peak feeding range.`,
+        cold_stress: `Water temp (${waterTemp.toFixed(1)}°F) is too cold for peak activity, so score is reduced.`,
+        heat_stress: `Water temp (${waterTemp.toFixed(1)}°F) is above the comfort range, reducing activity.`,
+        pressure_rapid_fall: `Pressure is dropping fast (${pressureRate} hPa/hr), which usually triggers feeding.`,
+        pressure_falling: `Pressure is falling (${pressureRate} hPa/hr), often improving bite windows.`,
+        pressure_rising: `Pressure is rising (${pressureRate} hPa/hr), which can slow feeding.`,
+        calm_wind: `Calm wind (${windMph.toFixed(0)} mph) supports better fish positioning and presentations.`,
+        moderate_wind: `Moderate wind (${windMph.toFixed(0)} mph) is generally favorable today.`,
+        rough_wind: `Wind around ${windMph.toFixed(0)} mph is rough and lowers consistency.`,
+        balanced_cloud: `Cloud cover near ${cloudAvg}% is in a favorable range for active fish.`,
+        spawn_cloud_adjustment: `Heavy cloud cover (~${cloudAvg}%) is adjusting spawn-period behavior.`,
+        light_precip_bonus: `Light precipitation chance (${precipProb}%) can improve feeding confidence.`,
+        high_precip_penalty: `High precipitation chance (${precipProb}%) lowers the score.`
+    };
+
+    return messages[factor] || null;
+}
+
+function getTodayScoreDrivers(data, maxItems = 3) {
+    const daily = data.weather?.forecast?.daily;
+    const dayKey = daily?.time?.[0];
+    if (!dayKey) return [];
+
+    const modern = calculateSpeciesAwareDayScore({
+        data,
+        dayKey,
+        speciesKey: data.speciesKey,
+        waterTempF: data.waterTemp,
+        locationKey: `${data.coords.lat.toFixed(3)}_${data.coords.lon.toFixed(3)}`,
+        now: new Date(),
+        debug: false
+    });
+
+    const contributions = modern?.debugPacket?.contributions || [];
+    const features = modern?.debugPacket?.features || {};
+
+    return contributions
+        .slice()
+        .sort((a, b) => Math.abs(b.delta || 0) - Math.abs(a.delta || 0))
+        .map((item) => buildScoreDriverText(item.factor, data, features))
+        .filter(Boolean)
+        .slice(0, maxItems);
+}
+
 function renderMoonGraphic(percent) {
     const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
     const shadowOffset = (50 - clamped) / 50;
@@ -348,6 +412,7 @@ function renderMainView(data) {
     const windRatio = normalizeGauge(0, 40, windMph);
     const precipProb = weather.forecast.hourly.precipitation_probability?.[0] || weather.forecast.daily.precipitation_probability_max?.[0] || 0;
     const precipMm = weather.forecast.current.precipitation ?? weather.forecast.hourly.precipitation?.[0] ?? 0;
+    const precipInPerHour = formatInches(precipMm);
     const currentWeather = getWeatherDescriptor(weather.forecast.current.weather_code);
     const conditionLabel = precipMm > 0.05 || precipProb >= 55
         ? `Rain likely now (${precipProb}% chance)`
@@ -359,6 +424,7 @@ function renderMainView(data) {
 
     const hourlyItems = buildHourlyItems(data);
     const dailyRows = buildDailyRows(data);
+    const todayScoreDrivers = getTodayScoreDrivers(data);
     const sunrise = daily.sunrise?.[0]
         ? new Date(daily.sunrise[0]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : 'N/A';
@@ -376,7 +442,12 @@ function renderMainView(data) {
                 <p class="pill ${state.className}">${state.label}</p>
                 <p class="hero-condition">${currentWeather.icon} ${conditionLabel}</p>
                 <p class="hero-explanation">${createExplanation({ precipProb, pressureTrend: pressureAnalysis.trend, windMph })}</p>
-                <p class="metric-note">Precipitation: ${precipMm.toFixed(2)} mm/h · ${precipProb}% chance</p>
+                <p class="metric-note">Precipitation: ${precipInPerHour} in/h · ${precipProb}% chance</p>
+                ${todayScoreDrivers.length ? `
+                    <ul class="interpretation-list">
+                        ${todayScoreDrivers.map((reason) => `<li>${reason}</li>`).join('')}
+                    </ul>
+                ` : '<p class="metric-note">Score is based on today's water temp, pressure trend, wind, cloud cover, and precipitation probability.</p>'}
             </section>
 
             <section class="card timeline-card" aria-label="Hourly activity timeline">
@@ -514,6 +585,7 @@ function renderDayDetailView(data, day) {
     }).filter(Number.isFinite);
     const hourlyWater2FtF = hourlyWaterSurfaceF.map((surfaceTemp) => estimateTempByDepth(surfaceTemp, data.waterType, 2, new Date(`${day}T12:00:00`)));
     const hourlyPrecipMm = dayHourIndexes.map((i) => hourly.precipitation?.[i]).filter(Number.isFinite);
+    const hourlyPrecipIn = hourlyPrecipMm.map((mm) => mmToInches(mm)).filter(Number.isFinite);
     const surfaceTempLabel = Number.isFinite(data.waterTemp) ? `${data.waterTemp.toFixed(1)}°F` : 'N/A';
     const twoFootTemp = Number.isFinite(data.waterTemp)
         ? estimateTempByDepth(data.waterTemp, data.waterType, 2, new Date(`${day}T12:00:00`))
@@ -540,13 +612,13 @@ function renderDayDetailView(data, day) {
             <section class="card detail-grid">
                 <h2 class="card-header">Conditions Overview</h2>
                 <p><strong>Temperature:</strong> ${cToF(daily.temperature_2m_min?.[dayIndex] || 0).toFixed(0)}°–${cToF(daily.temperature_2m_max?.[dayIndex] || 0).toFixed(0)}°F</p>
-                <p><strong>Precipitation:</strong> ${daily.precipitation_probability_max?.[dayIndex] ?? 'N/A'}% probability, ${daily.precipitation_sum?.[dayIndex] ?? 0} mm total</p>
+                <p><strong>Precipitation:</strong> ${daily.precipitation_probability_max?.[dayIndex] ?? 'N/A'}% probability, ${formatInches(daily.precipitation_sum?.[dayIndex] ?? 0)} in total</p>
                 <p><strong>Hourly rainfall:</strong> ${(() => {
                     const vals = hourly.precipitation.filter((_, i) => hourly.time[i].startsWith(day)).filter(Number.isFinite);
                     if (!vals.length) return 'N/A';
-                    const peak = Math.max(...vals).toFixed(2);
-                    const avg = (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2);
-                    return `${avg} mm/h avg · ${peak} mm/h peak`;
+                    const peak = formatInches(Math.max(...vals));
+                    const avg = formatInches(vals.reduce((s, v) => s + v, 0) / vals.length);
+                    return `${avg} in/h avg · ${peak} in/h peak`;
                 })()}</p>
                 <p><strong>Wind:</strong> ${windMph.toFixed(0)} mph ${windDir}</p>
                 <p><strong>Water Temp Surface:</strong> ${surfaceTempLabel}</p>
@@ -573,8 +645,8 @@ function renderDayDetailView(data, day) {
                     ${renderTrendSvg(hourlyWater2FtF, '°F', 1, 'Water Temp at 2ft', '24h')}
                 </div>
                 <div class="trend-block">
-                    <h3>Precipitation (mm/hr)</h3>
-                    ${renderTrendSvg(hourlyPrecipMm, ' mm/h', 2, 'Precipitation', '24h')}
+                    <h3>Precipitation (in/hr)</h3>
+                    ${renderTrendSvg(hourlyPrecipIn, ' in/h', 2, 'Precipitation', '24h')}
                 </div>
             </section>
 
