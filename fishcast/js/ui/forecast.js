@@ -246,16 +246,9 @@ function renderMainView(data) {
     const resultsDiv = document.getElementById('results');
     const daily = weather.forecast.daily;
 
-    const scoreWeather = {
-        ...weather.forecast,
-        daily: {
-            ...daily,
-            precipitation_sum: weather.historical?.daily?.precipitation_sum?.slice(-3) || daily.precipitation_sum || []
-        }
-    };
-
     const solunar = calculateSolunar(coords.lat, coords.lon, new Date());
-    const currentScore = calculateFishingScore(scoreWeather, data.waterTemp, data.speciesKey, solunar.moon_phase_percent);
+    const currentScoreValue = getDayScore(data, 0, solunar.moon_phase_percent);
+    const currentScore = { score: currentScoreValue };
     const state = normalizeState(currentScore.score);
 
     const pressureSeries = weather.forecast.hourly.surface_pressure.slice(0, 6);
