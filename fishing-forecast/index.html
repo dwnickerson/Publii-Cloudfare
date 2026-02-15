@@ -1381,6 +1381,10 @@
             return kmh * 0.621371;
         }
 
+        function mmToIn(mm) {
+            return mm * 0.0393701;
+        }
+
         function getWindDirection(degrees) {
             const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
             return directions[Math.round(degrees / 45) % 8];
@@ -1578,7 +1582,7 @@
             const historicalResponse = await fetch(historicalUrl);
             const historicalData = await historicalResponse.json();
             
-            const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,weather_code&hourly=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,weather_code,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=auto&forecast_days=${days}`;
+            const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,weather_code&hourly=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover,weather_code,precipitation_probability,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=auto&forecast_days=${days}`;
             
             const forecastResponse = await fetch(forecastUrl);
             const forecastData = await forecastResponse.json();
@@ -2159,6 +2163,10 @@
                                 <span class="detail-value">${kmhToMph(forecast.current.wind_speed_10m).toFixed(1)} mph ${getWindDirection(forecast.current.wind_direction_10m)}</span>
                             </div>
                             <div class="detail-row">
+                                <span class="detail-label">Hourly Wind</span>
+                                <span class="detail-value">${kmhToMph(forecast.hourly.wind_speed_10m[0] || 0).toFixed(1)} mph ${getWindDirection(forecast.hourly.wind_direction_10m[0] || 0)}</span>
+                            </div>
+                            <div class="detail-row">
                                 <span class="detail-label">Humidity</span>
                                 <span class="detail-value">${forecast.current.relative_humidity_2m}%</span>
                             </div>
@@ -2167,8 +2175,8 @@
                                 <span class="detail-value">${forecast.current.cloud_cover}%</span>
                             </div>
                             <div class="detail-row">
-                                <span class="detail-label">Precipitation</span>
-                                <span class="detail-value">${forecast.hourly.precipitation_probability[0] || 0}% chance</span>
+                                <span class="detail-label">Precipitation Possible</span>
+                                <span class="detail-value">${forecast.hourly.precipitation_probability[0] || 0}% chance (${mmToIn(forecast.hourly.precipitation[0] || 0).toFixed(2)} in)</span>
                             </div>
                         </div>
                         
@@ -2529,18 +2537,43 @@
         });
 
         const themeToggle = document.getElementById('themeToggle');
-        const currentTheme = localStorage.getItem('theme') || 'light';
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        let themePreference = localStorage.getItem('themePreference') || localStorage.getItem('theme') || 'system';
 
-        document.documentElement.setAttribute('data-theme', currentTheme);
-        themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+        function getResolvedTheme(preference) {
+            if (preference === 'system') {
+                return prefersDarkScheme.matches ? 'dark' : 'light';
+            }
+            return preference;
+        }
+
+        function applyTheme(preference) {
+            const resolvedTheme = getResolvedTheme(preference);
+            document.documentElement.setAttribute('data-theme', resolvedTheme);
+            themeToggle.textContent = resolvedTheme === 'dark' ? '☀️' : '🌙';
+            themeToggle.title = preference === 'system'
+                ? `Using system theme (${resolvedTheme}). Click to override manually.`
+                : `Theme: ${resolvedTheme}. Click to toggle light/dark.`;
+        }
+
+        applyTheme(themePreference);
+
+        prefersDarkScheme.addEventListener('change', () => {
+            if (themePreference === 'system') {
+                applyTheme(themePreference);
+            }
+        });
 
         themeToggle.addEventListener('click', () => {
-            const current = document.documentElement.getAttribute('data-theme');
+            const current = getResolvedTheme(themePreference);
             const next = current === 'dark' ? 'light' : 'dark';
-            
+            themePreference = next;
+
             document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('themePreference', next);
             localStorage.setItem('theme', next);
             themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+            themeToggle.title = `Theme: ${next}. Click to toggle light/dark.`;
         });
 
         if ('serviceWorker' in navigator) {
@@ -2774,7 +2807,7 @@
                 favorites: JSON.parse(localStorage.getItem('fishcast_favorites') || '[]'),
                 catches: JSON.parse(localStorage.getItem('fishcast_catches') || '[]'),
                 settings: {
-                    theme: localStorage.getItem('theme') || 'light',
+                    theme: localStorage.getItem('themePreference') || localStorage.getItem('theme') || 'system',
                     default_location: localStorage.getItem('default_location') || '',
                     default_species: localStorage.getItem('default_species') || '',
                     default_water_body: localStorage.getItem('default_water_body') || '',
