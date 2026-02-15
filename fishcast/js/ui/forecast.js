@@ -62,6 +62,60 @@ function formatInches(mm, decimals = 2) {
     return inches.toFixed(decimals);
 }
 
+
+function buildScoreDriverText(factor, data, features = {}) {
+    const waterTemp = Number(data.waterTemp);
+    const windMph = Number(features.windAvgKmh) * 0.621371;
+    const cloudAvg = Math.round(Number(features.cloudAvg) || 0);
+    const precipProb = Math.round(Number(features.precipProbAvg) || 0);
+    const pressureRate = Number(features.pressureTrend?.rate || 0).toFixed(1);
+
+    const messages = {
+        water_temp_optimal: `Water temp (${waterTemp.toFixed(1)}°F) is in the species' optimal feeding range.`,
+        water_temp_active: `Water temp (${waterTemp.toFixed(1)}°F) is fishable, but not in the peak feeding range.`,
+        cold_stress: `Water temp (${waterTemp.toFixed(1)}°F) is too cold for peak activity, so score is reduced.`,
+        heat_stress: `Water temp (${waterTemp.toFixed(1)}°F) is above the comfort range, reducing activity.`,
+        pressure_rapid_fall: `Pressure is dropping fast (${pressureRate} hPa/hr), which usually triggers feeding.`,
+        pressure_falling: `Pressure is falling (${pressureRate} hPa/hr), often improving bite windows.`,
+        pressure_rising: `Pressure is rising (${pressureRate} hPa/hr), which can slow feeding.`,
+        calm_wind: `Calm wind (${windMph.toFixed(0)} mph) supports better fish positioning and presentations.`,
+        moderate_wind: `Moderate wind (${windMph.toFixed(0)} mph) is generally favorable today.`,
+        rough_wind: `Wind around ${windMph.toFixed(0)} mph is rough and lowers consistency.`,
+        balanced_cloud: `Cloud cover near ${cloudAvg}% is in a favorable range for active fish.`,
+        spawn_cloud_adjustment: `Heavy cloud cover (~${cloudAvg}%) is adjusting spawn-period behavior.`,
+        light_precip_bonus: `Light precipitation chance (${precipProb}%) can improve feeding confidence.`,
+        high_precip_penalty: `High precipitation chance (${precipProb}%) lowers the score.`
+    };
+
+    return messages[factor] || null;
+}
+
+function getTodayScoreDrivers(data, maxItems = 3) {
+    const daily = data.weather?.forecast?.daily;
+    const dayKey = daily?.time?.[0];
+    if (!dayKey) return [];
+
+    const modern = calculateSpeciesAwareDayScore({
+        data,
+        dayKey,
+        speciesKey: data.speciesKey,
+        waterTempF: data.waterTemp,
+        locationKey: `${data.coords.lat.toFixed(3)}_${data.coords.lon.toFixed(3)}`,
+        now: new Date(),
+        debug: false
+    });
+
+    const contributions = modern?.debugPacket?.contributions || [];
+    const features = modern?.debugPacket?.features || {};
+
+    return contributions
+        .slice()
+        .sort((a, b) => Math.abs(b.delta || 0) - Math.abs(a.delta || 0))
+        .map((item) => buildScoreDriverText(item.factor, data, features))
+        .filter(Boolean)
+        .slice(0, maxItems);
+}
+
 function renderMoonGraphic(percent) {
     const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
     const shadowOffset = (50 - clamped) / 50;
@@ -370,6 +424,7 @@ function renderMainView(data) {
 
     const hourlyItems = buildHourlyItems(data);
     const dailyRows = buildDailyRows(data);
+    const todayScoreDrivers = getTodayScoreDrivers(data);
     const sunrise = daily.sunrise?.[0]
         ? new Date(daily.sunrise[0]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : 'N/A';
@@ -388,7 +443,11 @@ function renderMainView(data) {
                 <p class="hero-condition">${currentWeather.icon} ${conditionLabel}</p>
                 <p class="hero-explanation">${createExplanation({ precipProb, pressureTrend: pressureAnalysis.trend, windMph })}</p>
                 <p class="metric-note">Precipitation: ${precipInPerHour} in/h · ${precipProb}% chance</p>
-                <p class="metric-note">Fishing score method: start at a species baseline, then adjust for water temperature range, pressure trend, wind, cloud cover, and precipitation probability before applying stability controls to prevent large swings without meaningful weather changes.</p>
+                ${todayScoreDrivers.length ? `
+                    <ul class="interpretation-list">
+                        ${todayScoreDrivers.map((reason) => `<li>${reason}</li>`).join('')}
+                    </ul>
+                ` : '<p class="metric-note">Score is based on today's water temp, pressure trend, wind, cloud cover, and precipitation probability.</p>'}
             </section>
 
             <section class="card timeline-card" aria-label="Hourly activity timeline">
