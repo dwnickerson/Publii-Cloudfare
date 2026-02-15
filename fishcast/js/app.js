@@ -258,12 +258,12 @@ function setupEventListeners() {
     // Settings links
     document.getElementById('settingsLink')?.addEventListener('click', (e) => {
         e.preventDefault();
-        window.open('/fishcast/panel.html?panel=settings', '_blank', 'noopener,noreferrer');
+        openSettings();
     });
    
     document.getElementById('aboutLink')?.addEventListener('click', (e) => {
         e.preventDefault();
-        window.open('/fishcast/panel.html?panel=about', '_blank', 'noopener,noreferrer');
+        openAbout();
     });
 
     document.addEventListener('keydown', (event) => {
