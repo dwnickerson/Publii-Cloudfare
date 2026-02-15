@@ -51,18 +51,31 @@ function normalizeGauge(min, max, value) {
     return Math.max(0, Math.min(1, (value - min) / (max - min)));
 }
 
-function renderGauge({ valueLabel, scaleLabelLow, scaleLabelHigh, ratio = 0, unitLabel = '', direction = null }) {
+function renderMoonGraphic(percent) {
+    const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+    const shadowOffset = (50 - clamped) / 50;
+    return `
+        <div class="moon-phase" role="img" aria-label="${clamped}% moon illumination">
+            <span class="moon-phase-disc"></span>
+            <span class="moon-phase-shadow" style="transform: translateX(${shadowOffset * 26}px);"></span>
+        </div>
+    `;
+}
+
+function renderGauge({ valueLabel, scaleLabelLow, scaleLabelHigh, ratio = 0, unitLabel = '', direction = null, summaryLabel = '' }) {
     const degrees = -100 + (Math.max(0, Math.min(1, ratio)) * 200);
     return `
         <div class="gauge" aria-hidden="true">
             <div class="gauge-arc"></div>
             <div class="gauge-needle" style="transform: translateX(-50%) rotate(${degrees}deg)"></div>
+            <div class="gauge-hub"></div>
             <div class="gauge-center">
                 ${direction ? `<p class="gauge-direction">${direction}</p>` : ''}
                 <p class="gauge-value">${valueLabel}</p>
                 ${unitLabel ? `<p class="gauge-unit">${unitLabel}</p>` : ''}
             </div>
             <div class="gauge-scale"><span>${scaleLabelLow}</span><span>${scaleLabelHigh}</span></div>
+            ${summaryLabel ? `<p class="gauge-summary">${summaryLabel}</p>` : ''}
         </div>
     `;
 }
@@ -285,6 +298,7 @@ function renderMainView(data) {
                             <button type="button" class="daily-row" data-day="${row.date}" aria-label="Open details for ${row.dayLabel}, ${row.date}">
                                 <span class="daily-day">${row.dayLabel}</span>
                                 <span class="daily-condition">${row.weather.icon} <span>${row.weather.label}</span>${row.precipProb >= 40 ? `<em>${row.precipProb}%</em>` : ''}</span>
+                                <span class="daily-score ${row.state.className}">${row.score}</span>
                                 <span class="daily-temp-low">${row.lowTempF}°</span>
                                 <span class="daily-bar"><span class="daily-bar-fill ${row.state.className}"></span></span>
                                 <span class="daily-temp-high">${row.highTempF}°</span>
@@ -312,7 +326,8 @@ function renderMainView(data) {
                         unitLabel: 'inHg',
                         scaleLabelLow: 'Low',
                         scaleLabelHigh: 'High',
-                        ratio: pressureRatio
+                        ratio: pressureRatio,
+                        summaryLabel: pressureAnalysis.rate <= 0 ? 'Pressure easing' : 'Pressure climbing'
                     })}
                     <p class="metric-note">${pressureDelta} inHg change, ${describePressureTrend(pressureAnalysis.trend)} trend.</p>
                 </article>
@@ -324,14 +339,16 @@ function renderMainView(data) {
                         scaleLabelLow: 'Calm',
                         scaleLabelHigh: 'Strong',
                         ratio: windRatio,
-                        direction: windDir
+                        direction: windDir,
+                        summaryLabel: windMph > 14 ? 'Wind may reduce bite windows' : 'Manageable wind for open water'
                     })}
                     <p class="metric-note">Gust potential near ${windGust.toFixed(0)} mph.</p>
                 </article>
                 <article class="card metric-card">
                     <h3>Moon &amp; Light</h3>
+                    ${renderMoonGraphic(solunar.moon_phase_percent)}
                     <p class="metric-value">${moonLabel(solunar.moon_phase_percent)}</p>
-                    <p class="metric-note">${solunar.moon_phase_percent}% illumination this evening.</p>
+                    <p class="metric-note">${solunar.moon_phase_percent}% illumination this evening. Major: ${solunar.major_periods[0]}.</p>
                 </article>
             </section>
         </main>
@@ -404,7 +421,10 @@ function renderDayDetailView(data, day) {
                 <h2 class="card-header">Sun &amp; Moon</h2>
                 <p><strong>Sunrise:</strong> ${daily.sunrise?.[dayIndex] ? new Date(daily.sunrise[dayIndex]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
                 <p><strong>Sunset:</strong> ${daily.sunset?.[dayIndex] ? new Date(daily.sunset[dayIndex]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</p>
+                ${renderMoonGraphic(solunar.moon_phase_percent)}
                 <p><strong>Moon:</strong> ${moonLabel(solunar.moon_phase_percent)}, ${solunar.moon_phase_percent}% illumination</p>
+                <p><strong>Major periods:</strong> ${solunar.major_periods.join(' · ')}</p>
+                <p><strong>Minor periods:</strong> ${solunar.minor_periods.join(' · ')}</p>
             </section>
 
             <section class="card detail-grid">
