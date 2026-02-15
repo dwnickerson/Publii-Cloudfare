@@ -283,6 +283,8 @@ export function renderForecast(data) {
                 📝 ${todaySummary}
             </div>
         </div>
+
+        ${renderTrendCharts(weather)}
         
         <div class="action-buttons">
             <button class="action-btn" onclick="window.shareForecast()">📱 Share</button>
@@ -387,8 +389,6 @@ export function renderForecast(data) {
         </div>
     `;
 
-    html += renderTrendCharts(weather);
-    
     // Multi-day forecast if requested
     if (days > 1) {
         html += renderMultiDayForecast(weather, speciesKey, waterType, coords, waterTemp, solunar.moon_phase_percent);
