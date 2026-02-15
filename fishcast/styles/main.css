@@ -71,7 +71,7 @@ body {
 
 header {
     text-align: center;
-    padding: 92px 14px 34px;
+    padding: 36px 14px 30px;
 }
 
 .logo-text {
@@ -88,22 +88,8 @@ header {
     letter-spacing: 0.02em;
 }
 
-.theme-toggle {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 1000;
-    display: flex;
-    gap: 10px;
-    padding: 7px;
-    border-radius: 18px;
-    border: 1px solid var(--border-color);
-    background: rgba(10, 18, 36, 0.4);
-    backdrop-filter: blur(16px);
-}
 
-.icon-btn,
-.theme-toggle button {
+.icon-btn {
     width: 44px;
     min-width: 44px;
     height: 44px;
@@ -116,8 +102,7 @@ header {
     transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
 }
 
-.icon-btn:hover,
-.theme-toggle button:hover {
+.icon-btn:hover {
     transform: translateY(-1px);
     border-color: rgba(124, 198, 255, 0.6);
     background: rgba(124, 198, 255, 0.16);
@@ -292,6 +277,63 @@ button[type="submit"]:hover,
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+
+.trend-panel {
+    border-radius: 18px;
+    border: 1px solid var(--border-color);
+    padding: 14px;
+    background: rgba(8, 20, 40, 0.24);
+}
+
+.trend-title {
+    font-size: 0.86rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.trend-svg {
+    width: 100%;
+    height: auto;
+}
+
+.trend-grid-line {
+    stroke: rgba(255, 255, 255, 0.18);
+    stroke-width: 1;
+}
+
+.trend-axis-title,
+.trend-axis-label,
+.trend-point-label {
+    fill: var(--text-secondary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.trend-axis-title {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.trend-axis-label {
+    font-size: 11px;
+}
+
+.trend-axis-label-y {
+    text-anchor: end;
+}
+
+.trend-axis-label-x {
+    text-anchor: middle;
+}
+
+.trend-point-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-anchor: middle;
+}
+
 .detail-card h3,
 .tips-card h3,
 .weather-radar-card h3,
@@ -454,7 +496,7 @@ footer a { color: var(--text-secondary); text-decoration: none; }
 
 @media (max-width: 768px) {
     .container { padding: 20px 12px 30px; }
-    header { padding-top: 86px; }
+    header { padding-top: 24px; }
     .form-card,
     .score-header,
     .tips-card,

@@ -14,8 +14,6 @@ import { estimateWaterTemp } from './models/waterTemp.js';
 import { renderForecast, showLoading, showError } from './ui/forecast.js';
 import { renderFavorites } from './ui/favorites.js';
 import {
-    openTempReport,
-    closeTempReport,
     openSettings,
     closeSettings,
     saveSettings,
@@ -35,9 +33,6 @@ function init() {
    
     storage.runMigrations();
 
-    // Initialize theme
-    initTheme();
-   
     // Render favorites
     renderFavorites();
    
@@ -56,29 +51,6 @@ function init() {
     debugLog('FishCast ready');
 }
 
-// Theme management
-function initTheme() {
-    const theme = storage.getTheme();
-    document.documentElement.setAttribute('data-theme', theme);
-   
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.textContent = theme === 'dark' ? '◑' : '◐';
-    }
-}
-
-function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-   
-    document.documentElement.setAttribute('data-theme', next);
-    storage.setTheme(next);
-   
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.textContent = next === 'dark' ? '◑' : '◐';
-    }
-}
 
 // Load default form values
 function loadDefaults() {
@@ -250,11 +222,6 @@ function setupEventListeners() {
     // Save current location to favorites
     document.getElementById('saveLocationBtn')?.addEventListener('click', () => saveFavorite());
    
-    // Quick actions
-    document.getElementById('waterTempBtn')?.addEventListener('click', openTempReport);
-   
-    // Note: tempReportForm listener is in modals.js (form is created dynamically)
-   
     // Settings links
     document.getElementById('settingsLink')?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -268,7 +235,6 @@ function setupEventListeners() {
 
     document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
-        closeTempReport();
         closeSettings();
         closeAbout();
     });
@@ -285,8 +251,6 @@ function registerServiceWorker() {
 }
 
 // Make functions available globally for onclick handlers
-window.openTempReport = openTempReport;
-window.closeTempReport = closeTempReport;
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.saveSettings = saveSettings;
@@ -297,7 +261,6 @@ window.closeAbout = closeAbout;
 window.shareForecast = shareForecast;
 window.saveFavorite = saveFavorite;
 window.renderFavorites = renderFavorites;
-window.toggleTheme = toggleTheme;
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
