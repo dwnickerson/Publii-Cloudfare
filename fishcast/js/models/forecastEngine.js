@@ -3,6 +3,44 @@ import { storage } from '../services/storage.js';
 
 const TZ = 'America/Chicago';
 const FREEZE_HOUR_LOCAL = 19;
+const OPEN_METEO_DEFAULT_WIND_UNITS = 'kmh'; // Open-Meteo defaults to km/h unless wind_speed_unit is requested.
+
+const PHASE_PRIORITY = [
+    'spawn',
+    'pre_spawn',
+    'post_spawn',
+    'fall',
+    'summer',
+    'early_summer',
+    'dormant',
+    'inactive',
+    'winter'
+];
+
+const PHASE_BONUS_SCALE = 0.62;
+const PHASE_BONUS_MIN = -12;
+const PHASE_BONUS_MAX = 18;
+const PRESSURE_TREND_WINDOW_HOURS = 12;
+const PRESSURE_TREND_MIN_POINTS = 8;
+const SMOOTHING_ALPHA = 0.35;
+
+const MAJOR_CHANGE_THRESHOLDS = {
+    pressure_hpa: 6,
+    wind_mph: 10,
+    precip_prob: 40,
+    cloud_cover: 35,
+    air_temp_f: 10,
+    water_temp_f: 4
+};
+
+const HARD_MAJOR_CHANGE_THRESHOLDS = {
+    pressure_hpa: 9,
+    wind_mph: 16,
+    precip_prob: 60,
+    cloud_cover: 50,
+    air_temp_f: 15,
+    water_temp_f: 6
+};
 
 const BASE_STABILITY = {
     maxDeltaWithoutMaterialChange: 12,
@@ -90,17 +128,6 @@ function clamp(num, min, max) {
     return Math.max(min, Math.min(max, num));
 }
 
-function calculatePressureTrend(pressures) {
-    if (pressures.length < 4) return { trend: 'stable', rate: 0 };
-    const recent = pressures.slice(-4);
-    const rate = (recent[recent.length - 1] - recent[0]) / 3;
-    if (rate <= -1.2) return { trend: 'rapid_fall', rate };
-    if (rate < -0.3) return { trend: 'falling', rate };
-    if (rate >= 1.2) return { trend: 'rapid_rise', rate };
-    if (rate > 0.3) return { trend: 'rising', rate };
-    return { trend: 'stable', rate };
-}
-
 function cToF(c) {
     return (c * 9) / 5 + 32;
 }
@@ -112,16 +139,26 @@ function getFamilyFromSpecies(speciesKey) {
     return 'sunfish';
 }
 
+function isPlainObject(value) {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 function deepMerge(base, override) {
-    if (!override) return structuredClone(base);
-    const out = structuredClone(base);
+    if (!isPlainObject(base) && !isPlainObject(override)) {
+        return override === undefined ? base : override;
+    }
+
+    const out = isPlainObject(base) ? structuredClone(base) : {};
+    if (!isPlainObject(override)) return out;
+
     for (const [key, value] of Object.entries(override)) {
-        if (value && typeof value === 'object' && !Array.isArray(value) && out[key] && typeof out[key] === 'object' && !Array.isArray(out[key])) {
-            out[key] = { ...out[key], ...value };
+        if (isPlainObject(value) && isPlainObject(out[key])) {
+            out[key] = deepMerge(out[key], value);
         } else {
-            out[key] = value;
+            out[key] = structuredClone(value);
         }
     }
+
     return out;
 }
 
@@ -132,24 +169,141 @@ function getSpeciesProfile(speciesKey) {
     return deepMerge(familyProfile, override);
 }
 
-function getPhaseForTemp(speciesKey, waterTempF) {
+function getPhasePriority(phaseName) {
+    const idx = PHASE_PRIORITY.indexOf(phaseName);
+    return idx === -1 ? PHASE_PRIORITY.length : idx;
+}
+
+function getPhaseForTemp(speciesKey, waterTempF, context = {}) {
     const phases = SPECIES_DATA[speciesKey]?.phases;
     if (!phases || typeof waterTempF !== 'number') {
         return null;
     }
 
-    let bestMatch = null;
+    const month = Number(context.month);
+    const matchingPhases = [];
+
     for (const [phaseName, phaseData] of Object.entries(phases)) {
         const [min, max] = phaseData.temp_range || [];
+        if (!Number.isFinite(min) || !Number.isFinite(max)) continue;
         if (waterTempF >= min && waterTempF < max) {
-            const span = max - min;
-            if (!bestMatch || span < bestMatch.span) {
-                bestMatch = { name: phaseName, data: phaseData, span };
-            }
+            matchingPhases.push({
+                name: phaseName,
+                data: phaseData,
+                span: max - min,
+                priority: getPhasePriority(phaseName),
+                seasonWeight: Number.isFinite(month) && month >= 3 && month <= 6 && phaseName === 'spawn' ? -1 : 0
+            });
         }
     }
 
-    return bestMatch;
+    if (!matchingPhases.length) return null;
+
+    matchingPhases.sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        if (a.seasonWeight !== b.seasonWeight) return a.seasonWeight - b.seasonWeight;
+        if (a.span !== b.span) return a.span - b.span;
+        return a.name.localeCompare(b.name);
+    });
+
+    return matchingPhases[0];
+}
+
+function normalizeWindToKmh(windValue, windUnits = OPEN_METEO_DEFAULT_WIND_UNITS) {
+    const units = String(windUnits || OPEN_METEO_DEFAULT_WIND_UNITS).toLowerCase();
+    if (!Number.isFinite(windValue)) return null;
+
+    if (units.includes('mph')) return windValue * 1.60934;
+    if (units.includes('m/s') || units.includes('ms')) return windValue * 3.6;
+    if (units.includes('kn')) return windValue * 1.852;
+
+    // Defensive fallback if ingestion layer omits units.
+    if (windValue > 0 && windValue < 25) return windValue * 3.6;
+    return windValue;
+}
+
+function calculatePressureTrend(pressures) {
+    if (!pressures.length) return { trend: 'stable', rate: 0 };
+
+    const finite = pressures.filter(Number.isFinite);
+    if (finite.length < 4) return { trend: 'stable', rate: 0 };
+
+    const windowed = finite.slice(-PRESSURE_TREND_WINDOW_HOURS);
+    const series = windowed.length >= PRESSURE_TREND_MIN_POINTS ? windowed : finite.slice(-Math.max(4, windowed.length));
+
+    const n = series.length;
+    const xMean = (n - 1) / 2;
+    const yMean = average(series) ?? 0;
+
+    let numerator = 0;
+    let denominator = 0;
+    for (let i = 0; i < n; i++) {
+        const xDelta = i - xMean;
+        const yDelta = series[i] - yMean;
+        numerator += xDelta * yDelta;
+        denominator += xDelta * xDelta;
+    }
+
+    const rate = denominator === 0 ? 0 : numerator / denominator; // hPa / hour
+
+    if (rate <= -0.25) return { trend: 'rapid_fall', rate };
+    if (rate < -0.08) return { trend: 'falling', rate };
+    if (rate >= 0.25) return { trend: 'rapid_rise', rate };
+    if (rate > 0.08) return { trend: 'rising', rate };
+    return { trend: 'stable', rate };
+}
+
+function computeLinearTrend(valuesPerDay) {
+    const finite = valuesPerDay.filter(Number.isFinite);
+    if (finite.length < 2) return null;
+    const n = finite.length;
+    const xMean = (n - 1) / 2;
+    const yMean = average(finite) ?? 0;
+
+    let numerator = 0;
+    let denominator = 0;
+    for (let i = 0; i < n; i++) {
+        const xDelta = i - xMean;
+        numerator += xDelta * (finite[i] - yMean);
+        denominator += xDelta * xDelta;
+    }
+
+    return denominator === 0 ? null : numerator / denominator;
+}
+
+function getPhaseConfidence({ phase, waterTempF, trendFPerDay }) {
+    if (!phase?.data?.temp_range) return 1;
+    const [min, max] = phase.data.temp_range;
+    const span = Math.max(1, max - min);
+    const center = (min + max) / 2;
+    const distanceToCenter = Math.abs(waterTempF - center);
+    const centerConfidence = clamp(1 - distanceToCenter / (span / 2), 0, 1);
+
+    let confidence = 0.45 + centerConfidence * 0.55;
+
+    if (Number.isFinite(trendFPerDay)) {
+        if (Math.abs(trendFPerDay) > 4) confidence *= 0.55;
+        if (phase.name === 'spawn' && trendFPerDay > 2.5) confidence *= 0.5;
+    } else if (phase.name === 'spawn') {
+        confidence *= 0.75;
+    }
+
+    return clamp(confidence, 0.2, 1);
+}
+
+function computeDeltas(current, previous) {
+    return {
+        pressure_hpa: Math.abs((current.pressureAvg ?? 0) - (previous.pressureAvg ?? 0)),
+        wind_mph: Math.abs(((current.windAvgKmh ?? 0) - (previous.windAvgKmh ?? 0)) * 0.621371),
+        precip_prob: Math.abs((current.precipProbAvg ?? 0) - (previous.precipProbAvg ?? 0)),
+        cloud_cover: Math.abs((current.cloudAvg ?? 0) - (previous.cloudAvg ?? 0)),
+        air_temp_f: Math.abs(cToF(current.tempAvgC ?? 0) - cToF(previous.tempAvgC ?? 0)),
+        water_temp_f: Math.abs((current.waterTempF ?? 0) - (previous.waterTempF ?? 0))
+    };
+}
+
+function exceedsThresholds(deltas, thresholds) {
+    return Object.entries(thresholds).some(([key, threshold]) => (deltas[key] ?? 0) >= threshold);
 }
 
 export function buildDayWindows(weather, dayKey) {
@@ -160,26 +314,38 @@ export function buildDayWindows(weather, dayKey) {
         if ((hourly.time[i] || '').startsWith(dayKey)) dayIndexes.push(i);
     }
 
+    const windUnits = weather.forecast?.hourly_units?.wind_speed_10m || OPEN_METEO_DEFAULT_WIND_UNITS;
+
     const dayPressures = dayIndexes.map((i) => hourly.surface_pressure[i]).filter(Number.isFinite);
-    const dayWinds = dayIndexes.map((i) => hourly.wind_speed_10m[i]).filter(Number.isFinite);
+    const dayWindsKmh = dayIndexes
+        .map((i) => normalizeWindToKmh(hourly.wind_speed_10m[i], windUnits))
+        .filter(Number.isFinite);
     const dayClouds = dayIndexes.map((i) => hourly.cloud_cover[i]).filter(Number.isFinite);
     const dayPrecipProb = dayIndexes.map((i) => hourly.precipitation_probability[i]).filter(Number.isFinite);
     const dayTempsC = dayIndexes.map((i) => hourly.temperature_2m[i]).filter(Number.isFinite);
 
     const firstIdx = dayIndexes[0] ?? 0;
-    const pastStart = Math.max(0, firstIdx - 48);
+    const pastStart = Math.max(0, firstIdx - PRESSURE_TREND_WINDOW_HOURS);
     const pastPressures = hourly.surface_pressure.slice(pastStart, firstIdx).filter(Number.isFinite);
+
+    const airHistoryC = (weather.historical?.daily?.temperature_2m_mean || []).filter(Number.isFinite);
+    const airForecastC = (weather.forecast?.daily?.temperature_2m_mean || []).filter(Number.isFinite);
+    const tempTrendCPerDay = computeLinearTrend(airHistoryC.slice(-2).concat(airForecastC.slice(0, 3)));
 
     return {
         dayIndexes,
         dayFeatures: {
             pressureAvg: average(dayPressures),
-            windAvgKmh: average(dayWinds),
+            windAvgKmh: average(dayWindsKmh),
+            windUnits: 'kmh',
             cloudAvg: average(dayClouds),
             precipProbAvg: average(dayPrecipProb),
             tempAvgC: average(dayTempsC),
+            airTempTrendFPerDay: Number.isFinite(tempTrendCPerDay) ? tempTrendCPerDay * 1.8 : null,
             pressureTrend: calculatePressureTrend(pastPressures.concat(dayPressures.slice(0, 3))),
-            precip3DayMm: (weather.historical?.daily?.precipitation_sum || []).slice(-2).concat((weather.forecast?.daily?.precipitation_sum || []).slice(0, 1))
+            precip3DayMm: (weather.historical?.daily?.precipitation_sum || [])
+                .slice(-2)
+                .concat((weather.forecast?.daily?.precipitation_sum || []).slice(0, 1))
         }
     };
 }
@@ -188,43 +354,90 @@ export function scoreSpeciesByProfile(features, waterTempF, dateKey, speciesKey)
     const profile = getSpeciesProfile(speciesKey);
     let score = profile.baseline;
     const contributions = [];
-    const phase = getPhaseForTemp(speciesKey, waterTempF);
+    const month = Number(dateKey.split('-')[1]);
+    const phase = getPhaseForTemp(speciesKey, waterTempF, { month });
 
     if (waterTempF >= profile.temp.optimal[0] && waterTempF <= profile.temp.optimal[1]) {
-        score += 22; contributions.push({ factor: 'water_temp_optimal', delta: 22 });
+        score += 22;
+        contributions.push({ factor: 'water_temp_optimal', delta: 22 });
     } else if (waterTempF >= profile.temp.active[0] && waterTempF <= profile.temp.active[1]) {
-        score += 11; contributions.push({ factor: 'water_temp_active', delta: 11 });
+        score += 11;
+        contributions.push({ factor: 'water_temp_active', delta: 11 });
     }
-    if (waterTempF <= profile.temp.coldStress) { score -= 18; contributions.push({ factor: 'cold_stress', delta: -18 }); }
-    if (waterTempF >= profile.temp.heatStress) { score -= 14; contributions.push({ factor: 'heat_stress', delta: -14 }); }
+    if (waterTempF <= profile.temp.coldStress) {
+        score -= 18;
+        contributions.push({ factor: 'cold_stress', delta: -18 });
+    }
+    if (waterTempF >= profile.temp.heatStress) {
+        score -= 14;
+        contributions.push({ factor: 'heat_stress', delta: -14 });
+    }
 
     if (phase?.data && Number.isFinite(phase.data.score_bonus)) {
-        const normalizedPhaseDelta = clamp(Math.round(phase.data.score_bonus * 0.4), -8, 14);
+        const phaseConfidence = getPhaseConfidence({
+            phase,
+            waterTempF,
+            trendFPerDay: features.waterTempTrendFPerDay ?? features.airTempTrendFPerDay
+        });
+        const normalizedPhaseDelta = clamp(
+            Math.round(phase.data.score_bonus * PHASE_BONUS_SCALE * phaseConfidence),
+            PHASE_BONUS_MIN,
+            PHASE_BONUS_MAX
+        );
         score += normalizedPhaseDelta;
-        contributions.push({ factor: `phase_${phase.name}`, delta: normalizedPhaseDelta });
+        contributions.push({
+            factor: `phase_${phase.name}`,
+            delta: normalizedPhaseDelta,
+            meta: { phaseConfidence }
+        });
     }
 
-    const month = Number(dateKey.split('-')[1]);
-    if (month >= 3 && month <= 6) { score += profile.season.springBonus; contributions.push({ factor: 'spring_activity', delta: profile.season.springBonus }); }
-    if (month >= 9 && month <= 11) { score += profile.season.fallBonus; contributions.push({ factor: 'fall_feed', delta: profile.season.fallBonus }); }
-    if (month === 12 || month <= 2) { score += profile.season.winterPenalty; contributions.push({ factor: 'winter_slowdown', delta: profile.season.winterPenalty }); }
+    if (month >= 3 && month <= 6) {
+        score += profile.season.springBonus;
+        contributions.push({ factor: 'spring_activity', delta: profile.season.springBonus });
+    }
+    if (month >= 9 && month <= 11) {
+        score += profile.season.fallBonus;
+        contributions.push({ factor: 'fall_feed', delta: profile.season.fallBonus });
+    }
+    if (month === 12 || month <= 2) {
+        score += profile.season.winterPenalty;
+        contributions.push({ factor: 'winter_slowdown', delta: profile.season.winterPenalty });
+    }
 
-    const p = features.pressureTrend;
-    if (p.trend === 'rapid_fall') { score += profile.pressure.rapidFallBonus; contributions.push({ factor: 'pressure_rapid_fall', delta: profile.pressure.rapidFallBonus }); }
-    else if (p.trend === 'falling') { score += profile.pressure.fallingBonus; contributions.push({ factor: 'pressure_falling', delta: profile.pressure.fallingBonus }); }
-    else if (p.trend === 'rising' || p.trend === 'rapid_rise') { score += profile.pressure.risingPenalty; contributions.push({ factor: 'pressure_rising', delta: profile.pressure.risingPenalty }); }
+    const p = features.pressureTrend || { trend: 'stable' };
+    if (p.trend === 'rapid_fall') {
+        score += profile.pressure.rapidFallBonus;
+        contributions.push({ factor: 'pressure_rapid_fall', delta: profile.pressure.rapidFallBonus });
+    } else if (p.trend === 'falling') {
+        score += profile.pressure.fallingBonus;
+        contributions.push({ factor: 'pressure_falling', delta: profile.pressure.fallingBonus });
+    } else if (p.trend === 'rising' || p.trend === 'rapid_rise') {
+        score += profile.pressure.risingPenalty;
+        contributions.push({ factor: 'pressure_rising', delta: profile.pressure.risingPenalty });
+    }
 
     const windMph = (features.windAvgKmh || 0) * 0.621371;
-    if (windMph < 6) { score += profile.wind.calmBonus; contributions.push({ factor: 'calm_wind', delta: profile.wind.calmBonus }); }
-    else if (windMph < 12) { score += profile.wind.moderateBonus; contributions.push({ factor: 'moderate_wind', delta: profile.wind.moderateBonus }); }
-    else if (windMph > 17) { score += profile.wind.roughPenalty; contributions.push({ factor: 'rough_wind', delta: profile.wind.roughPenalty }); }
+    if (windMph < 6) {
+        score += profile.wind.calmBonus;
+        contributions.push({ factor: 'calm_wind', delta: profile.wind.calmBonus });
+    } else if (windMph < 12) {
+        score += profile.wind.moderateBonus;
+        contributions.push({ factor: 'moderate_wind', delta: profile.wind.moderateBonus });
+    } else if (windMph > 17) {
+        score += profile.wind.roughPenalty;
+        contributions.push({ factor: 'rough_wind', delta: profile.wind.roughPenalty });
+    }
 
     if ((features.cloudAvg || 0) >= 30 && (features.cloudAvg || 0) <= 70) {
-        score += profile.clouds.balancedBonus; contributions.push({ factor: 'balanced_cloud', delta: profile.clouds.balancedBonus });
+        score += profile.clouds.balancedBonus;
+        contributions.push({ factor: 'balanced_cloud', delta: profile.clouds.balancedBonus });
     }
-    const inSpawnWindow = phase?.name?.includes('spawn');
+
+    const inSpawnWindow = phase?.name === 'spawn';
     if ((features.cloudAvg || 0) > 80 && inSpawnWindow) {
-        score += profile.clouds.heavySpawnPenalty; contributions.push({ factor: 'spawn_cloud_adjustment', delta: profile.clouds.heavySpawnPenalty });
+        score += profile.clouds.heavySpawnPenalty;
+        contributions.push({ factor: 'spawn_cloud_adjustment', delta: profile.clouds.heavySpawnPenalty });
     }
 
     const precipProb = features.precipProbAvg || 0;
@@ -236,6 +449,7 @@ export function scoreSpeciesByProfile(features, waterTempF, dateKey, speciesKey)
         contributions.push({ factor: 'high_precip_penalty', delta: profile.precipitation.heavyProbPenalty });
     }
 
+    // Public scoring contract: returns { score, contributions, profile } and score is always clamped.
     score = clamp(Math.round(score), 0, profile.ceiling);
     return { score, contributions, profile };
 }
@@ -262,40 +476,46 @@ export function applyStabilityControls({ baseScore, inputs, speciesKey, location
     let reason = 'base_score';
 
     if (previous) {
-        const deltas = {
-            pressure_hpa: Math.abs((inputs.pressureAvg ?? 0) - (previous.inputs.pressureAvg ?? 0)),
-            wind_mph: Math.abs(((inputs.windAvgKmh ?? 0) - (previous.inputs.windAvgKmh ?? 0)) * 0.621371),
-            precip_prob: Math.abs((inputs.precipProbAvg ?? 0) - (previous.inputs.precipProbAvg ?? 0)),
-            cloud_cover: Math.abs((inputs.cloudAvg ?? 0) - (previous.inputs.cloudAvg ?? 0)),
-            air_temp_f: Math.abs(cToF(inputs.tempAvgC ?? 0) - cToF(previous.inputs.tempAvgC ?? 0)),
-            water_temp_f: Math.abs((inputs.waterTempF ?? 0) - (previous.inputs.waterTempF ?? 0))
-        };
+        const deltas = computeDeltas(inputs, previous.inputs || {});
+        const material = exceedsThresholds(deltas, cfg.materialThresholds);
+        const major = exceedsThresholds(deltas, MAJOR_CHANGE_THRESHOLDS);
+        const hardMajor = exceedsThresholds(deltas, HARD_MAJOR_CHANGE_THRESHOLDS);
 
-        const material = Object.entries(cfg.materialThresholds).some(([k, threshold]) => (deltas[k] ?? 0) >= threshold);
         if (!material && Math.abs(baseScore - previous.score) > cfg.maxDeltaWithoutMaterialChange) {
             const direction = Math.sign(baseScore - previous.score);
             nextScore = previous.score + direction * cfg.maxDeltaWithoutMaterialChange;
             reason = 'gated_non_material_change';
         }
 
-        if (isTomorrow && localHour >= FREEZE_HOUR_LOCAL) {
+        if (isTomorrow && !hardMajor) {
+            const blended = Math.round(previous.score * (1 - SMOOTHING_ALPHA) + baseScore * SMOOTHING_ALPHA);
+            nextScore = major ? Math.round((blended + baseScore) / 2) : blended;
+            reason = major ? 'tomorrow_smoothed_major' : 'tomorrow_smoothed';
+        }
+
+        if (isTomorrow && localHour >= FREEZE_HOUR_LOCAL && !hardMajor) {
             const shift = Math.abs(baseScore - previous.score);
             if (shift < cfg.majorForecastShiftScoreDelta) {
                 nextScore = previous.score;
                 reason = 'tomorrow_freeze_after_7pm';
-            } else {
-                reason = 'tomorrow_unfrozen_major_shift';
             }
+        } else if (isTomorrow && hardMajor) {
+            reason = 'tomorrow_unfrozen_hard_major_shift';
         }
 
-        if (debug) console.info('[FishCast][stability]', { key, dateKey, previous: previous.score, baseScore, nextScore, reason, deltas });
+        if (debug) {
+            console.info('[FishCast][stability]', { key, dateKey, previous: previous.score, baseScore, nextScore, reason, deltas });
+        }
     }
 
-    storage.set(key, { score: nextScore, inputs, updatedAt: now.toISOString() });
-    return { score: nextScore, reason };
+    const safeScore = clamp(Math.round(nextScore), 0, 100);
+    storage.set(key, { score: safeScore, inputs, updatedAt: now.toISOString() });
+    return { score: safeScore, reason };
 }
 
 export function calculateSpeciesAwareDayScore({ data, dayKey, speciesKey, waterTempF, locationKey, now = new Date(), debug = false }) {
+    // Public API contract used by UI: returns { score, debugPacket }.
+    // Pipeline: weather/day -> dayFeatures -> species profile score -> stability controls -> bounded score.
     const { dayFeatures } = buildDayWindows(data.weather, dayKey);
     const scored = scoreSpeciesByProfile(dayFeatures, waterTempF, dayKey, speciesKey);
 

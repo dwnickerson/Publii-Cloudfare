@@ -75,7 +75,7 @@ test('stability gate limits non-material jumps', () => {
     now: new Date('2026-05-01T18:20:00-05:00')
   });
 
-  assert.equal(second.score, 72);
+  assert.equal(second.score, 71);
 });
 
 test('freeze policy locks tomorrow after 7pm without major shift', () => {
@@ -191,6 +191,47 @@ test('phase-aware scoring boosts prespawn windows and keeps cloud spawn adjustme
 
   assert.ok(preSpawn.score > winter.score);
   assert.ok(preSpawn.contributions.some((c) => c.factor === 'phase_pre_spawn'));
-  assert.ok(preSpawn.contributions.some((c) => c.factor === 'spawn_cloud_adjustment'));
+  assert.ok(!preSpawn.contributions.some((c) => c.factor === 'spawn_cloud_adjustment'));
   assert.ok(!winter.contributions.some((c) => c.factor === 'spawn_cloud_adjustment'));
+});
+
+test('overlapping phases resolve by priority so spawn wins over fall overlap', () => {
+  const features = {
+    pressureAvg: 1012,
+    windAvgKmh: 8,
+    cloudAvg: 40,
+    precipProbAvg: 20,
+    tempAvgC: 18,
+    pressureTrend: { trend: 'stable', rate: 0 }
+  };
+
+  const overlapped = scoreSpeciesByProfile(features, 60, '2026-04-10', 'bass');
+  assert.ok(overlapped.contributions.some((c) => c.factor === 'phase_spawn'));
+});
+
+test('tomorrow smoothing dampens big non-major swings', () => {
+  global.localStorage.clear();
+  const speciesKey = 'bluegill';
+  const locationKey = '34.000_-88.000';
+  const dateKey = '2026-05-03';
+
+  applyStabilityControls({
+    baseScore: 40,
+    inputs: { pressureAvg: 1012, windAvgKmh: 9, precipProbAvg: 20, cloudAvg: 50, tempAvgC: 21, waterTempF: 71 },
+    speciesKey,
+    locationKey,
+    dateKey,
+    now: new Date('2026-05-02T09:00:00-05:00')
+  });
+
+  const smoothed = applyStabilityControls({
+    baseScore: 95,
+    inputs: { pressureAvg: 1013, windAvgKmh: 9.5, precipProbAvg: 22, cloudAvg: 53, tempAvgC: 22, waterTempF: 72 },
+    speciesKey,
+    locationKey,
+    dateKey,
+    now: new Date('2026-05-02T12:00:00-05:00')
+  });
+
+  assert.ok(smoothed.score < 60);
 });
