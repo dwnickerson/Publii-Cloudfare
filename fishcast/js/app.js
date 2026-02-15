@@ -237,10 +237,8 @@ function setupEventListeners() {
     // Geolocation
     document.getElementById('geolocateBtn')?.addEventListener('click', useCurrentLocation);
    
-    // Theme toggle
-    document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+    // Quick actions
     document.getElementById('waterTempBtn')?.addEventListener('click', openTempReport);
-    document.getElementById('weatherRadarBtn')?.addEventListener('click', window.openWeatherRadar);
    
     // Note: tempReportForm listener is in modals.js (form is created dynamically)
    

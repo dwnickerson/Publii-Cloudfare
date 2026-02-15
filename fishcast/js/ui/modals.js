@@ -1133,7 +1133,7 @@ export function submitCatchLog(event) {
 }
 
 export function openSettings() {
-    const darkMode = storage.get('darkMode') || 'false';
+    const darkModeEnabled = storage.getTheme() === 'dark';
     const stats = getUserStats();
     
     const modalHTML = `
@@ -1153,7 +1153,7 @@ export function openSettings() {
                             <div style="font-size: 0.9rem; color: var(--text-secondary);">Toggle dark/light theme</div>
                         </div>
                         <label class="toggle-switch">
-                            <input type="checkbox" id="darkModeToggle" ${darkMode === 'true' ? 'checked' : ''}>
+                            <input type="checkbox" id="darkModeToggle" ${darkModeEnabled ? 'checked' : ''}>
                             <span class="toggle-slider"></span>
                         </label>
                     </div>
@@ -1213,11 +1213,7 @@ export function openSettings() {
     // Add event listener for dark mode toggle
     document.getElementById('darkModeToggle').addEventListener('change', (e) => {
         const enabled = e.target.checked;
-        if (enabled) {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
+        document.documentElement.setAttribute('data-theme', enabled ? 'dark' : 'light');
     });
 }
 
@@ -1229,8 +1225,9 @@ export function closeSettings() {
 export function saveSettings() {
     const darkModeToggle = document.getElementById('darkModeToggle');
     if (darkModeToggle) {
-        const darkMode = darkModeToggle.checked;
-        storage.set('darkMode', darkMode.toString());
+        const theme = darkModeToggle.checked ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        storage.setTheme(theme);
     }
 
     // Support legacy settings modal fields used by fishcast/index.html
@@ -1271,14 +1268,14 @@ export function saveSettings() {
 
 export function exportAllData() {
     const stats = getUserStats();
-    const darkMode = storage.get('darkMode') || 'false';
+    const theme = storage.getTheme();
     
     const data = {
         exportDate: new Date().toISOString(),
         version: '3.3.7',
         userStats: stats,
         settings: {
-            darkMode: darkMode
+            theme
         }
     };
     

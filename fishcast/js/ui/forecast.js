@@ -364,6 +364,12 @@ export function renderForecast(data) {
                         ${precipIcon} ${precipProb}% chance
                     </span>
                 </div>
+                <div class="detail-row">
+                    <span class="detail-label">Weather Radar</span>
+                    <span class="detail-value">
+                        <button class="action-btn" type="button" onclick="window.openWeatherRadar()">📡 Open Radar</button>
+                    </span>
+                </div>
             </div>
             
             <div class="detail-card">
