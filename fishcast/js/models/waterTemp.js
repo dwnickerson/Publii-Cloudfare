@@ -14,7 +14,23 @@ function getSeasonalBaseTemp(latitude, dayOfYear, waterType) {
     const peakDay = 210 + body.seasonal_lag_days;
     const radians = (2 * Math.PI * (dayOfYear - peakDay)) / 365;
     const seasonalTemp = annualMean + (amplitude * Math.cos(radians));
-    return seasonalTemp;
+
+    // Seasonal size/depth correction:
+    // - In winter, shallow ponds tend to warm faster on sunny runs.
+    // - Large/deep reservoirs keep stronger cold-water inertia.
+    // This keeps cold-season ranking from unrealistically favoring reservoirs.
+    const winterDistance = Math.min(
+        Math.abs(dayOfYear - 15),
+        Math.abs(dayOfYear + 365 - 15),
+        Math.abs(dayOfYear - 365 - 15)
+    );
+    const winterFactor = Math.max(0, 1 - (winterDistance / 95));
+    const winterTypeAdjustment =
+        waterType === 'pond' ? 9.0 :
+        waterType === 'lake' ? 2.0 :
+        -3.0;
+
+    return seasonalTemp + (winterTypeAdjustment * winterFactor);
 }
 
 // Calculate solar radiation effect from cloud cover
