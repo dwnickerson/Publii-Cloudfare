@@ -62,37 +62,46 @@ function getPrecipIcon(percentage) {
 
 function buildTrendLineSvg(values, {
     width = 680,
-    height = 220,
+    height = 250,
     stroke = '#62d0ff',
     suffix = '',
     decimals = 0,
-    gradientId = 'trendFill'
+    gradientId = 'trendFill',
+    xTicks = [],
+    yAxisTitle = ''
 } = {}) {
     if (!values || values.length < 2) return '';
 
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = max - min || 1;
-    const padX = 18;
-    const padY = 16;
-    const usableWidth = width - (padX * 2);
-    const usableHeight = height - (padY * 2);
+    const pad = { top: 20, right: 20, bottom: 46, left: 62 };
+    const usableWidth = width - pad.left - pad.right;
+    const usableHeight = height - pad.top - pad.bottom;
 
     const points = values.map((value, index) => {
-        const x = padX + (index / (values.length - 1)) * usableWidth;
+        const x = pad.left + (index / (values.length - 1)) * usableWidth;
         const normalizedY = (value - min) / range;
-        const y = (height - padY) - (normalizedY * usableHeight);
+        const y = (height - pad.bottom) - (normalizedY * usableHeight);
         return { x, y, value };
     });
 
     const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
-    const areaPath = `${path} L${(width - padX).toFixed(2)} ${(height - padY).toFixed(2)} L${padX.toFixed(2)} ${(height - padY).toFixed(2)} Z`;
+    const areaPath = `${path} L${(width - pad.right).toFixed(2)} ${(height - pad.bottom).toFixed(2)} L${pad.left.toFixed(2)} ${(height - pad.bottom).toFixed(2)} Z`;
+
     const yTicks = [0, 0.25, 0.5, 0.75, 1].map((tick) => {
         const tickValue = min + ((1 - tick) * range);
+        const y = pad.top + (tick * usableHeight);
         return {
-            y: padY + (tick * usableHeight),
+            y,
             label: `${tickValue.toFixed(decimals)}${suffix}`
         };
+    });
+
+    const normalizedXTicks = (xTicks || []).map((tick) => {
+        const index = Math.min(values.length - 1, Math.max(0, tick.index));
+        const x = pad.left + (index / (values.length - 1)) * usableWidth;
+        return { x, label: tick.label };
     });
 
     return `
@@ -103,7 +112,14 @@ function buildTrendLineSvg(values, {
                     <stop offset="100%" stop-color="${stroke}" stop-opacity="0.08"></stop>
                 </linearGradient>
             </defs>
-            ${yTicks.map((tick) => `<line x1="${padX}" y1="${tick.y.toFixed(2)}" x2="${(width - padX).toFixed(2)}" y2="${tick.y.toFixed(2)}" class="trend-grid-line"></line>`).join('')}
+            <text x="16" y="${(pad.top + (usableHeight / 2)).toFixed(2)}" class="trend-axis-title" transform="rotate(-90 16 ${(pad.top + (usableHeight / 2)).toFixed(2)})">${yAxisTitle}</text>
+            ${yTicks.map((tick) => `
+                <g>
+                    <line x1="${pad.left}" y1="${tick.y.toFixed(2)}" x2="${(width - pad.right).toFixed(2)}" y2="${tick.y.toFixed(2)}" class="trend-grid-line"></line>
+                    <text x="${(pad.left - 8).toFixed(2)}" y="${(tick.y + 4).toFixed(2)}" class="trend-axis-label trend-axis-label-y">${tick.label}</text>
+                </g>
+            `).join('')}
+            ${normalizedXTicks.map((tick) => `<text x="${tick.x.toFixed(2)}" y="${(height - 14).toFixed(2)}" class="trend-axis-label trend-axis-label-x">${tick.label}</text>`).join('')}
             <path d="${areaPath}" fill="url(#${gradientId})"></path>
             <path d="${path}" fill="none" stroke="${stroke}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"></path>
             ${points.map((point, index) => {
@@ -127,9 +143,11 @@ function renderTrendCharts(weather) {
         return '';
     }
 
-    const labels = [0, 6, 12, 18, 23]
-        .filter((i) => hourlyTime[i])
-        .map((i) => new Date(hourlyTime[i]).toLocaleTimeString('en-US', { hour: '2-digit' }));
+    const tickIndices = [0, 6, 12, 18, 23].filter((i) => hourlyTime[i]);
+    const timeTicks = tickIndices.map((i) => ({
+        index: i,
+        label: new Date(hourlyTime[i]).toLocaleTimeString('en-US', { hour: 'numeric' })
+    }));
 
     return `
         <div class="trend-charts-card">
@@ -137,14 +155,27 @@ function renderTrendCharts(weather) {
             <div class="trend-chart-grid">
                 <div class="trend-panel">
                     <div class="trend-title">Air Temperature</div>
-                    ${buildTrendLineSvg(hourlyTemps, { stroke: '#7ed6a5', suffix: '°', decimals: 0, gradientId: 'tempTrendFill' })}
+                    ${buildTrendLineSvg(hourlyTemps, {
+                        stroke: '#7ed6a5',
+                        suffix: '°F',
+                        decimals: 0,
+                        gradientId: 'tempTrendFill',
+                        xTicks: timeTicks,
+                        yAxisTitle: 'Temperature'
+                    })}
                 </div>
                 <div class="trend-panel">
                     <div class="trend-title">Chance of Precipitation</div>
-                    ${buildTrendLineSvg(hourlyPrecip, { stroke: '#62d0ff', suffix: '%', decimals: 0, gradientId: 'precipTrendFill' })}
+                    ${buildTrendLineSvg(hourlyPrecip, {
+                        stroke: '#62d0ff',
+                        suffix: '%',
+                        decimals: 0,
+                        gradientId: 'precipTrendFill',
+                        xTicks: timeTicks,
+                        yAxisTitle: 'Precipitation'
+                    })}
                 </div>
             </div>
-            <div class="trend-axis-labels">${labels.map((label) => `<span>${label}</span>`).join('')}</div>
         </div>
     `;
 }
