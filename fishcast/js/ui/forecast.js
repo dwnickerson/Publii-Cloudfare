@@ -2,6 +2,7 @@ import { cToF, kmhToMph, getWindDirection } from '../utils/math.js';
 import { calculateFishingScore, getPressureRate } from '../models/fishingScore.js';
 import { calculateSolunar } from '../models/solunar.js';
 import { calculateSpeciesAwareDayScore } from '../models/forecastEngine.js';
+import { estimateTempByDepth } from '../models/waterTemp.js';
 
 let latestForecastData = null;
 let savedMainScroll = 0;
@@ -60,6 +61,17 @@ function renderMoonGraphic(percent) {
             <span class="moon-phase-shadow" style="transform: translateX(${shadowOffset * 26}px);"></span>
         </div>
     `;
+}
+
+function buildDepthTemperatureFigures(surfaceTemp, waterType, sampleDate) {
+    if (!Number.isFinite(surfaceTemp) || !waterType) return 'N/A';
+
+    return [4, 10, 20]
+        .map((depthFt) => {
+            const tempAtDepth = estimateTempByDepth(surfaceTemp, waterType, depthFt, sampleDate);
+            return `${depthFt}ft: ${tempAtDepth.toFixed(1)}°F`;
+        })
+        .join(' · ');
 }
 
 function renderGauge({ valueLabel, scaleLabelLow, scaleLabelHigh, ratio = 0, unitLabel = '', direction = null, summaryLabel = '' }) {
@@ -287,6 +299,7 @@ function renderMainView(data) {
     const precipMm = weather.forecast.current.precipitation ?? weather.forecast.hourly.precipitation?.[0] ?? 0;
     const waterTempLabel = Number.isFinite(data.waterTemp) ? `${data.waterTemp.toFixed(1)}°F` : 'N/A';
     const uvCurrent = weather.forecast.current.uv_index ?? weather.forecast.hourly.uv_index?.[0] ?? null;
+    const depthFiguresLabel = buildDepthTemperatureFigures(data.waterTemp, data.waterType, new Date());
     const radarUrl = `https://embed.windy.com/embed2.html?lat=${coords.lat.toFixed(3)}&lon=${coords.lon.toFixed(3)}&detailLat=${coords.lat.toFixed(3)}&detailLon=${coords.lon.toFixed(3)}&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=true&calendar=now`;
 
     const hourlyItems = buildHourlyItems(data);
@@ -373,6 +386,7 @@ function renderMainView(data) {
                     <h3>Water Temp</h3>
                     <p class="metric-value">${waterTempLabel}</p>
                     <p class="metric-note">Estimated by water-body physics model and local weather history.</p>
+                    <p class="metric-note">Depth figures: ${depthFiguresLabel}</p>
                 </article>
                 <article class="card metric-card">
                     <h3>UV Index</h3>
@@ -427,6 +441,7 @@ function renderDayDetailView(data, day) {
     const windMph = kmhToMph(daily.wind_speed_10m_max?.[dayIndex] || 0);
     const windDir = getWindDirection(daily.wind_direction_10m_dominant?.[dayIndex] || data.weather.forecast.current.wind_direction_10m);
     const uvDay = daily.uv_index_max?.[dayIndex] ?? null;
+    const depthFiguresLabel = buildDepthTemperatureFigures(data.waterTemp, data.waterType, new Date(`${day}T12:00:00`));
 
     resultsDiv.innerHTML = `
         <main class="fishcast-shell" aria-label="Day detail view">
@@ -458,6 +473,7 @@ function renderDayDetailView(data, day) {
                 })()}</p>
                 <p><strong>Wind:</strong> ${windMph.toFixed(0)} mph ${windDir}</p>
                 <p><strong>Water Temp:</strong> ${Number.isFinite(data.waterTemp) ? `${data.waterTemp.toFixed(1)}°F` : 'N/A'}</p>
+                <p><strong>Depth Figures:</strong> ${depthFiguresLabel}</p>
                 <p><strong>UV Index:</strong> ${uvDay !== null ? Number(uvDay).toFixed(1) : 'N/A'} (daily max)</p>
                 ${pressureAvg ? `<p><strong>Pressure:</strong> ${pressureAvg} inHg avg (${pressureMin}-${pressureMax})</p>` : ''}
                 ${daily.cloud_cover_mean?.[dayIndex] !== undefined ? `<p><strong>Cloud Cover:</strong> ${daily.cloud_cover_mean[dayIndex]}%</p>` : ''}
