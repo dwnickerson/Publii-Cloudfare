@@ -43,6 +43,9 @@ function init() {
    
     // Setup event listeners
     setupEventListeners();
+
+    // Open settings/about panel when requested by query string
+    openPanelFromQuery();
    
     // Initialize species memory feature
     initSpeciesMemory();
@@ -65,6 +68,17 @@ function init() {
 }
 
 
+
+function openPanelFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const panel = (params.get('panel') || '').toLowerCase();
+
+    if (panel === 'settings') {
+        openSettings();
+    } else if (panel === 'about') {
+        openAbout();
+    }
+}
 
 function applyStoredTheme() {
     const theme = storage.getTheme();
@@ -244,12 +258,12 @@ function setupEventListeners() {
     // Settings links
     document.getElementById('settingsLink')?.addEventListener('click', (e) => {
         e.preventDefault();
-        openSettings();
+        window.open('/fishcast/?panel=settings', '_blank', 'noopener,noreferrer');
     });
    
     document.getElementById('aboutLink')?.addEventListener('click', (e) => {
         e.preventDefault();
-        openAbout();
+        window.open('/fishcast/?panel=about', '_blank', 'noopener,noreferrer');
     });
 
     document.addEventListener('keydown', (event) => {
