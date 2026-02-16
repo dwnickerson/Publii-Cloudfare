@@ -384,19 +384,26 @@ function renderWeatherRadar(coords) {
 function calculateWaterTempEvolution(initialWaterTemp, forecastData, waterType, latitude) {
     const body = WATER_BODIES_V2[waterType];
     const temps = [initialWaterTemp]; // Day 0 (today)
-    
-    const { daily } = forecastData;
+
+    const daily = forecastData?.daily || {};
+    const dayCount = Math.max(0, Array.isArray(daily.time) ? daily.time.length - 1 : 7);
     const airTemps = daily.temperature_2m_mean || daily.temperature_2m_max; // Use what's available
     const cloudCover = daily.cloud_cover_mean || [];
     const windSpeeds = daily.wind_speed_10m_max || [];
+    const weatherContext = { forecast: forecastData };
+
+    if (!Array.isArray(airTemps) || airTemps.length === 0) {
+        console.warn('[FishCast][forecast] Missing forecast.daily temperature data; using flat water-temp projection.');
+        return Array.from({ length: dayCount + 1 }, () => initialWaterTemp);
+    }
     
     // For each future day, calculate water temp change using physics
-    for (let day = 0; day < 7; day++) {
+    for (let day = 0; day < dayCount; day++) {
         const currentWaterTemp = temps[temps.length - 1];
-        const airTemp = toTempF(airTemps[day], data.weather);
+        const airTemp = toTempF(airTemps[day], weatherContext);
         const clouds = cloudCover[day] || 50;
         const windKmh = windSpeeds[day] || 0;
-        const windMph = toWindMph(windKmh, data.weather);
+        const windMph = toWindMph(windKmh, weatherContext);
         
         // 1. Thermal Inertia Effect (water resists change)
         const tempDelta = airTemp - currentWaterTemp;
