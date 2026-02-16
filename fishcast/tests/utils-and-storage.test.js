@@ -30,3 +30,14 @@ test('weather cache key varies by lat/lon/days', () => {
   assert.notEqual(a, b);
   assert.notEqual(a, c);
 });
+
+
+test('theme storage reads both JSON and legacy raw string values', () => {
+  localStorage.clear();
+
+  localStorage.setItem('theme', 'dark');
+  assert.equal(storage.getTheme(), 'dark');
+
+  storage.setTheme('light');
+  assert.equal(storage.getTheme(), 'light');
+});

@@ -12,6 +12,7 @@ import { getLocation } from './services/geocoding.js';
 import { getWeather } from './services/weatherAPI.js';
 import { estimateWaterTemp } from './models/waterTemp.js';
 import { renderForecast, showLoading, showError } from './ui/forecast.js';
+import { applySavedTheme } from './utils/theme.js';
 import { renderFavorites } from './ui/favorites.js';
 import {
     openSettings,
@@ -31,6 +32,9 @@ function init() {
     debugLog('FishCast initializing');
    
     storage.runMigrations();
+
+    // Apply theme as early as possible
+    applySavedTheme();
 
     // Render favorites
     renderFavorites();

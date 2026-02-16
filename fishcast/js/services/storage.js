@@ -244,7 +244,16 @@ export const storage = {
 
     // Theme management
     getTheme() {
-        return this.get(CACHE_KEYS.THEME, 'light');
+        const rawTheme = safeGetRaw(CACHE_KEYS.THEME);
+        if (rawTheme === null) return 'light';
+
+        try {
+            const parsedTheme = JSON.parse(rawTheme);
+            return parsedTheme === 'dark' ? 'dark' : 'light';
+        } catch (error) {
+            // Backward compatibility for legacy raw string values (e.g. dark)
+            return rawTheme === 'dark' ? 'dark' : 'light';
+        }
     },
 
     setTheme(theme) {

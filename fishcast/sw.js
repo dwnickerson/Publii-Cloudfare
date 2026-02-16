@@ -1,5 +1,5 @@
 // FishCast Service Worker
-const CACHE_NAME = 'fishcast-v5';
+const CACHE_NAME = 'fishcast-v6';
 const APP_PATH = '/fishcast/';
 
 const urlsToCache = [
@@ -22,6 +22,7 @@ const urlsToCache = [
   `${APP_PATH}js/ui/modals.js`,
   `${APP_PATH}js/utils/date.js`,
   `${APP_PATH}js/utils/math.js`,
+  `${APP_PATH}js/utils/theme.js`,
   `${APP_PATH}icon-192.png`,
   `${APP_PATH}icon-512.png`
 ];

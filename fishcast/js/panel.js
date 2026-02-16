@@ -1,4 +1,7 @@
 import { openSettings, openAbout, closeSettings, closeAbout, saveSettings } from './ui/modals.js';
+import { applySavedTheme } from './utils/theme.js';
+
+applySavedTheme();
 
 function goHome() {
     window.location.href = '/fishcast/';
