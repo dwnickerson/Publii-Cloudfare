@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test fishcast/tests/*.test.js"
+    "test": "node --test fishcast/tests/*.test.js",
+    "test:smoke": "node fishcast/tests/smoke/runSmokeTests.js"
   }
 }
